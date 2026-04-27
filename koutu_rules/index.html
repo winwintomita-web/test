@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SDWSE6MTHS"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SDWSE6MTHS'), {
+    'content_group': 'アプリ' 
+  });
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🚨 自転車 違反行為クイズ｜2026年5月施行「青切符」対策・交通安全</title>
+<meta name="description" content="2026年5月の改正道交法（青切符導入）に対応。酒気帯び、ながらスマホ、逆走など、自転車の違反行為を全20問のクイズで解説。反則金の目安も学べる、安全運転のための無料チェックツールです。">
+<meta name="keywords" content="自転車,違反行為,青切符,改正道路交通法,交通安全,クイズ,反則金,ながら運転,酒気帯び">
+<meta property="og:url" content="https://hplite.com/app/bicycle/rules/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="自転車 違反行為クイズ｜2026年5月施行「青切符」に備える！">
+<meta property="og:description" content="知らなかったでは済まされない！改正道交法で導入される『青切符』と違反行為をクイズで確認。反則金や罰則も詳しく解説。">
+<meta property="og:site_name" content="HPLite">
+<meta property="og:image" content="https://hplite.com/app/bicycle/rules/ogp.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="【自転車の青切符】あなたは大丈夫？違反行為チェッククイズ">
+<meta name="twitter:description" content="ながらスマホ、逆走、酒気帯び…全20問で自転車の新ルールを総復習。反則金の目安もわかります。">
+<meta name="twitter:image" content="https://hplite.com/app/bicycle/rules/ogp.jpg">
+<link rel="stylesheet" href="css/style.css?v04">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+<div class="app-wrapper"> 
+	
+	<!-- ヘッダー -->
+	<header class="app-header"> <span class="logo-icon">🚨</span>
+		<h1>自転車 違反行為クイズ</h1>
+		<p class="sub-title">青切符で学ぶ！ながら・酒気帯び・信号無視・逆走・歩行者妨害</p>
+	</header>
+	<!-- ===== 開始画面 ===== -->
+	<section id="start-screen" class="start-screen"> <span class="hero-image">⚠️</span>
+		<h2>あなたは大丈夫？<br>
+			自転車の違反をチェック！</h2>
+		
+		<!-- 警告バナー -->
+		<div class="warning-banner"> <strong>🔔 2026年5月施行 改正道路交通法</strong> 自転車にも青切符（交通反則告知書）が交付されます。知らなかったでは済みません。このクイズで違反行為を確認しましょう！ </div>
+		<ul class="features-list">
+			<li>🔢 全 <strong>20問</strong>・4択クイズ</li>
+			<li>💡 <strong>解説＆反則金</strong>の説明あり</li>
+		</ul>
+		<button type="button" class="btn-start" id="btn-start">スタート 🚀</button>
+	</section>
+	
+	<!-- ===== クイズ画面 ===== -->
+	<section id="quiz-screen" class="hidden"> 
+		
+		<!-- 進捗バー -->
+		<div class="progress-area">
+			<div class="progress-label"> <span>問題 <span id="question-num">1</span> / <span id="total-num">20</span></span> <span>🏆 正解数</span> </div>
+			<div class="progress-bar-track">
+				<div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
+			</div>
+		</div>
+		
+		<!-- スコア -->
+		<div class="score-row"> <span class="score-badge" id="score-display">✅ 0 / 0</span> </div>
+		
+		<!-- クイズカード -->
+		<div class="quiz-card"> 
+			
+			<!-- カテゴリラベル --> 
+			<span class="category-label" id="category-label">カテゴリ</span> 
+			
+			<!-- 危険シーン画像 -->
+			<div class="sign-image-wrap">
+				<div id="sign-container"></div>
+			</div>
+			
+			<!-- 問題文 -->
+			<p class="question-text" id="question-text"></p>
+			
+			<!-- 選択肢 -->
+			<div class="choices-grid" id="choices-grid"></div>
+			
+			<!-- 解説パネル -->
+			<div class="explanation-panel hidden" id="explanation-panel">
+				<div id="verdict"></div>
+				<p class="correct-ans" id="correct-answer"></p>
+				<p class="desc-text"   id="desc-text"></p>
+			</div>
+			
+			<!-- 次へ / 結果へボタン -->
+			<button type="button" class="btn-next hidden" id="btn-next">次の問題へ ▶</button>
+		</div>
+		<!-- /quiz-card --> 
+		
+	</section>
+	<!-- /quiz-screen -->
+	
+	<aside> 
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800"
+     crossorigin="anonymous"></script> 
+		<!-- 自転車ルール（HPL app） --> 
+		<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-2445184492315800"
+     data-ad-slot="9431452902"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins> 
+		<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+		</script> 
+	</aside>
+</div>
+<!-- /app-wrapper --> 
+
+<small class="copy">&copy; 2026 HPLite</small> 
+<script src="js/quiz.js?v02"></script>
+</body>
+</html>

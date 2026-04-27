@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SDWSE6MTHS"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SDWSE6MTHS'), {
+    'content_group': 'アプリ' 
+  });
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="自転車 違反行為クイズの診断結果を確認しよう！">
+<title>結果発表 | 自転車 違反行為クイズ</title>
+<link rel="stylesheet" href="css/style.css?v04">
+<!-- Chart.js --> 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-wrapper"> 
+	
+	<!-- ヘッダー -->
+	<header class="app-header"> <span class="logo-icon">🚨</span>
+		<h1>結果発表</h1>
+		<p class="sub-title">自転車 違反行為クイズ</p>
+	</header>
+	
+	<!-- 結果カード -->
+	<div class="result-card" id="result-card"> <span class="result-icon" id="result-icon">🎉</span>
+		<div class="result-score-display"> <span id="score-num">0</span><span> / <span id="score-total">20</span> 問正解</span> </div>
+		<div> <span class="result-rank" id="rank-badge">-</span> </div>
+		
+		<!-- ドーナツチャート -->
+		<div class="result-chart-wrap">
+			<canvas id="result-chart" width="260" height="260"></canvas>
+		</div>
+		
+		<!-- メッセージ -->
+		<div class="result-message" id="result-message">結果を読み込んでいます…</div>
+		
+		<!-- アクションボタン -->
+		<div class="result-actions"> <a href="index.html" class="btn-retry">🔄 もう一度チャレンジ！</a>
+			<button class="btn-share" id="btn-share">𝕏 結果をシェア</button>
+		</div>
+		<p class="ex">↓↓ 問題の振り返り ↓↓</p>
+	</div>
+	<!-- /result-card --> 
+	
+	<!-- 広告（中部） -->
+	<aside> 
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800"
+     crossorigin="anonymous"></script> 
+		<!-- 自転車ルール（HPL app） --> 
+		<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-2445184492315800"
+     data-ad-slot="9431452902"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins> 
+		<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+		</script> 
+	</aside>
+	
+	<!-- 問題振り返り -->
+	<div class="review-list" id="review-list">
+		<h3>📋 問題の振り返り</h3>
+	</div>
+	
+	<!-- 広告（下部） -->
+	<aside> 
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800"
+     crossorigin="anonymous"></script> 
+		<!-- 自転車ルール（HPL app） --> 
+		<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-2445184492315800"
+     data-ad-slot="9431452902"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins> 
+		<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+		</script> 
+	</aside>
+	
+	<!-- 再挑戦ボタン（下） -->
+	<div class="text-center mt-16"> <a href="index.html" class="btn-retry" style="display:inline-block; padding:18px 40px;"> 🔄 もう一度チャレンジ！ </a> </div>
+	
+	<div class="text-center"> <a href="../sign/index.html" class="btn-try"> 次は標識クイズに挑戦！ </a> </div>
+</div>
+<!-- /app-wrapper --> 
+
+<small class="copy">&copy; 2026 HPLite</small> 
+<script>
+(function () {
+
+  /* ---- データ取得 ---- */
+  const stored = localStorage.getItem('bicycleRulesQuizResult');
+  if (!stored) {
+    window.location.href = 'index.html';
+    return;
+  }
+  const result = JSON.parse(stored);
+  const { score, total, answers } = result;
+
+  /* ---- スコア表示 ---- */
+  document.getElementById('score-num').textContent   = score;
+  document.getElementById('score-total').textContent = total;
+
+  /* ---- ランク判定 ---- */
+  const pct = score / total;
+  let rankClass, rankText, icon, message;
+
+  if (score === total) {
+    rankClass = 'rank-perfect';
+    rankText  = '🏆 パーフェクト合格！';
+    icon      = '🏆';
+    message   = '素晴らしい！パーフェクトです！自転車の違反行為について完璧に理解できています。これからも安全なサイクルライフを楽しんでください！ぜひ周りの方にも教えてあげましょう。';
+  } else if (pct >= 0.8) {
+    rankClass = 'rank-great';
+    rankText  = '⭐ 優秀！';
+    icon      = '⭐';
+    message   = 'お疲れ様でした！あと少しで満点でしたね。間違えた問題の解説を確認して、次は満点を目指しましょう。自転車の違反は知らずに犯してしまうことが多いので、しっかり復習が大切です！';
+  } else if (pct >= 0.6) {
+    rankClass = 'rank-good';
+    rankText  = '👍 まずまず！';
+    icon      = '👍';
+    message   = 'お疲れ様でした！基本は押さえていますが、まだ危ない部分があります。特に間違えた問題の解説と反則金の金額をしっかり確認しましょう。2026年5月から自転車にも青切符が適用されます！';
+  } else {
+    rankClass = 'rank-try';
+    rankText  = '📖 要復習！';
+    icon      = '📖';
+    message   = 'お疲れ様でした！まだ覚えるべき違反行為がたくさんあります。2026年5月の改正道路交通法施行で自転車にも青切符が交付されます。解説をしっかり読んで、再チャレンジしましょう！';
+  }
+
+  document.getElementById('result-icon').textContent    = icon;
+  const badge = document.getElementById('rank-badge');
+  badge.textContent = rankText;
+  badge.className   = 'result-rank ' + rankClass;
+  document.getElementById('result-message').textContent = message;
+
+  /* ---- ドーナツチャート ---- */
+  const ctx = document.getElementById('result-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['正解', '不正解'],
+      datasets: [{
+        data: [score, total - score],
+        backgroundColor: ['#43A047', '#EF9A9A'],
+        borderColor:     ['#2E7D32', '#E53935'],
+        borderWidth: 2,
+        hoverOffset: 8,
+      }],
+    },
+    options: {
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { size: 14, weight: 'bold', family: "'M PLUS Rounded 1c', sans-serif" },
+            padding: 16,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} 問`,
+          },
+        },
+      },
+      animation: { animateRotate: true, duration: 900 },
+    },
+    plugins: [{
+      id: 'centerText',
+      afterDraw(chart) {
+        const { width, height, ctx } = chart;
+        ctx.save();
+        ctx.font = `bold 2rem 'M PLUS Rounded 1c', sans-serif`;
+        ctx.fillStyle    = '#B71C1C';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${score}/${total}`, width / 2, height / 2 - 16);
+        ctx.font      = `1rem 'M PLUS Rounded 1c', sans-serif`;
+        ctx.fillStyle = '#546E7A';
+        ctx.fillText('正解', width / 2, height / 2 + 18);
+        ctx.restore();
+      },
+    }],
+  });
+
+  /* ---- カテゴリ別の色 ---- */
+  const catColors = {
+    'ながら運転':    '#FF6D00',
+    '酒気帯び運転':  '#9C27B0',
+    '信号無視':      '#E53935',
+    '一時不停止':    '#E53935',
+    '逆走・右側通行':'#1565C0',
+    '歩行者妨害':    '#2E7D32'
+  };
+
+  /* ---- 振り返りリスト ---- */
+  const reviewContainer = document.getElementById('review-list');
+
+  if (answers && answers.length > 0) {
+    answers.forEach((ans, idx) => {
+      const isOk = ans.correct;
+      const item = document.createElement('div');
+      item.className = `review-item${isOk ? '' : ' is-wrong'}`;
+
+      // カテゴリ色
+      const catColor = catColors[ans.category] || '#546E7A';
+
+      // 危険シーン画像
+      const imgHtml = ans.signImage ? `
+        <div class="review-sign-wrap">
+          <img class="review-sign-img"
+               src="${ans.signImage}"
+               alt="${ans.category}"
+               onerror="this.style.display='none'">
+        </div>` : '';
+
+      // カテゴリバッジ
+      const catBadgeHtml = `<span class="review-category" style="background:${catColor}">${ans.category}</span>`;
+
+      // 正誤ヘッダー
+      const headerHtml = `
+        <div class="review-q-header">
+          <span class="review-badge ${isOk ? 'badge-ok' : 'badge-ng'}">${isOk ? '○' : '✕'}</span>
+          <span class="review-q-num">Q${idx + 1}</span>
+          <span class="review-q-text">${ans.question}</span>
+        </div>`;
+
+      // 回答欄
+      const answerHtml = `
+        <div class="review-answers">
+          <p class="review-ans-row ${isOk ? 'ans-ok' : 'ans-ng'}">
+            <span class="ans-label">あなた</span>
+            <span class="ans-value">${isOk ? '✅' : '❌'} ${ans.selectedText}</span>
+          </p>
+          ${!isOk ? `
+          <p class="review-ans-row ans-correct">
+            <span class="ans-label">正解</span>
+            <span class="ans-value">⭕ ${ans.correctText}</span>
+          </p>` : ''}
+        </div>`;
+
+      // 解説＋反則金バッジ
+      let expHtml = '';
+      if (ans.explanation) {
+        const fineMatch    = ans.explanation.match(/反則金（目安：([^）]+)）/);
+        const criminalMatch = ans.explanation.match(/刑事罰（[^）]+）|重い罰則|懲役|罰金が科/);
+        const cleanText    = ans.explanation.replace(/反則金（目安：[^）]+）。?/g, '').trim();
+        let badgeHtml = '';
+        if (fineMatch) {
+          badgeHtml = `<div class="fine-badge">💴 <span class="fine-label">反則金 目安</span>${fineMatch[1]}</div>`;
+        } else if (criminalMatch) {
+          badgeHtml = `<div class="fine-badge fine-criminal">⚖️ <span class="fine-label">罰則</span>刑事罰の対象</div>`;
+        }
+        expHtml = `<p class="review-explanation">${cleanText}</p>${badgeHtml}`;
+      }
+
+      item.innerHTML = imgHtml + catBadgeHtml + headerHtml + answerHtml + expHtml;
+      reviewContainer.appendChild(item);
+    });
+  }
+
+  /* ---- シェアボタン ---- */
+  document.getElementById('btn-share').addEventListener('click', () => {
+    const text = encodeURIComponent(
+      `🚨 自転車 違反行為クイズ\n` +
+      `スコア：${score} / ${total} 問正解 ${rankText}\n` +
+      `あなたも挑戦してみよう！ #自転車クイズ #青切符 #交通安全`
+    );
+    const url = encodeURIComponent(window.location.origin + '/rules/index.html');
+    window.open(
+      `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  });
+
+})();
+</script>
+</body>
+</html>
