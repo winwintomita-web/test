@@ -24,14 +24,31 @@
 <div class="app-wrapper"> 
 	
 	<!-- ヘッダー -->
-	<header class="app-header"> <span class="logo-icon">🚨</span>
-		<h1>結果発表</h1>
-		<p class="sub-title">自転車 違反行為クイズ</p>
+	<header class="app-header">
+		<div class="lang-switcher">
+			<label for="lang-select" id="lang-label">Languages</label>
+			<select id="lang-select" aria-label="Languages">
+				<option value="ja">🇯🇵 日本語</option>
+				<option value="en">🇺🇸 English</option>
+				<option value="zh">🇨🇳 中文（普通话）</option>
+				<option value="ko">🇰🇷 한국어</option>
+				<option value="vi">🇻🇳 Tiếng Việt</option>
+				<option value="tl">🇵🇭 Filipino</option>
+				<option value="id">🇮🇩 Bahasa Indonesia</option>
+				<option value="my">🇲🇲 မြန်မာဘာသာ</option>
+				<option value="pt">🇵🇹 Português</option>
+				<option value="fr">🇫🇷 Français</option>
+				<option value="it">🇮🇹 Italiano</option>
+			</select>
+		</div>
+		<span class="logo-icon">🚨</span>
+		<h1 id="result-page-title">結果発表</h1>
+		<p class="sub-title" id="result-page-subtitle">自転車 違反行為クイズ</p>
 	</header>
 	
 	<!-- 結果カード -->
 	<div class="result-card" id="result-card"> <span class="result-icon" id="result-icon">🎉</span>
-		<div class="result-score-display"> <span id="score-num">0</span><span> / <span id="score-total">20</span> 問正解</span> </div>
+		<div class="result-score-display"> <span id="score-num">0</span><span> / <span id="score-total">20</span> <span id="score-suffix">問正解</span></span> </div>
 		<div> <span class="result-rank" id="rank-badge">-</span> </div>
 		
 		<!-- ドーナツチャート -->
@@ -43,10 +60,10 @@
 		<div class="result-message" id="result-message">結果を読み込んでいます…</div>
 		
 		<!-- アクションボタン -->
-		<div class="result-actions"> <a href="index.html" class="btn-retry">🔄 もう一度チャレンジ！</a>
+		<div class="result-actions"> <a href="index.html" class="btn-retry" id="btn-retry-top">🔄 もう一度チャレンジ！</a>
 			<button class="btn-share" id="btn-share">𝕏 結果をシェア</button>
 		</div>
-		<p class="ex">↓↓ 問題の振り返り ↓↓</p>
+		<p class="ex" id="review-caption">↓↓ 問題の振り返り ↓↓</p>
 	</div>
 	<!-- /result-card --> 
 	
@@ -68,7 +85,7 @@
 	
 	<!-- 問題振り返り -->
 	<div class="review-list" id="review-list">
-		<h3>📋 問題の振り返り</h3>
+		<h3 id="review-title">📋 問題の振り返り</h3>
 	</div>
 	
 	<!-- 広告（下部） -->
@@ -88,15 +105,62 @@
 	</aside>
 	
 	<!-- 再挑戦ボタン（下） -->
-	<div class="text-center mt-16"> <a href="index.html" class="btn-retry" style="display:inline-block; padding:18px 40px;"> 🔄 もう一度チャレンジ！ </a> </div>
+	<div class="text-center mt-16"> <a href="index.html" class="btn-retry" id="btn-retry-bottom" style="display:inline-block; padding:18px 40px;"> 🔄 もう一度チャレンジ！ </a> </div>
 	
-	<div class="text-center"> <a href="../sign/index.html" class="btn-try"> 次は標識クイズに挑戦！ </a> </div>
+	<div class="text-center"> <a href="../sign/index.html" class="btn-try" id="btn-next-quiz"> 次は標識クイズに挑戦！ </a> </div>
 </div>
 <!-- /app-wrapper --> 
 
 <small class="copy">&copy; 2026 HPLite</small> 
 <script>
 (function () {
+  const SUPPORTED = ['ja', 'en', 'zh', 'ko', 'vi', 'tl', 'id', 'my', 'pt', 'fr', 'it'];
+  const CATEGORY_I18N = {
+    'ながら運転':    { en: 'Distracted riding', zh: '分心骑行', ko: '주의분산 운전', vi: 'Lai xe mat tap trung', tl: 'Distracted riding', id: 'Berkendara tidak fokus', my: 'အာရံုလြဲ စီးနင္းျခင္း', pt: 'Conducao distraida', fr: 'Conduite distraite', it: 'Guida distratta' },
+    '酒気帯び運転':  { en: 'Riding under influence', zh: '酒后骑行', ko: '음주 상태 운전', vi: 'Lai xe sau khi uong ruou', tl: 'Pagmamaneho na may alak', id: 'Berkendara dalam pengaruh alkohol', my: 'အရက္ေသာက္ၿပီး စီးနင္းျခင္း', pt: 'Conducao sob efeito de alcool', fr: 'Conduite sous alcool', it: 'Guida in stato di ebbrezza' },
+    '信号無視':      { en: 'Signal violation', zh: '闯红灯', ko: '신호 위반', vi: 'Vuot den do', tl: 'Paglabag sa ilaw trapiko', id: 'Melanggar lampu lalu lintas', my: 'မီးပြိဳင့္မလိုက္နာ', pt: 'Avanco de sinal', fr: 'Non-respect du feu', it: 'Violazione del semaforo' },
+    '一時不停止':    { en: 'Failure to stop', zh: '未停车让行', ko: '일시정지 위반', vi: 'Khong dung han', tl: 'Hindi paghinto', id: 'Tidak berhenti', my: 'မရပ္တန္႔ျခင္း', pt: 'Nao parar', fr: 'Non-arret', it: 'Mancato stop' },
+    '逆走・右側通行': { en: 'Wrong-way riding', zh: '逆行/靠右行驶', ko: '역주행/우측통행', vi: 'Di nguoc chieu', tl: 'Pagmamaneho sa maling direksyon', id: 'Melawan arus', my: 'လမ္းေျပာင္းျပန္ စီးနင္းျခင္း', pt: 'Contramao', fr: 'Contresens', it: 'Contromano' },
+    '歩行者妨害':    { en: 'Pedestrian obstruction', zh: '妨碍行人', ko: '보행자 방해', vi: 'Can tro nguoi di bo', tl: 'Pangharang sa pedestrian', id: 'Menghalangi pejalan kaki', my: 'လမ္းေလွ်ာက္သူကို ေႏွာင့္ယွက္ျခင္း', pt: 'Obstrucao de pedestres', fr: 'Gene aux pietons', it: 'Ostacolo ai pedoni' },
+    'その他の違反':  { en: 'Other violations', zh: '其他违规', ko: '기타 위반', vi: 'Vi pham khac', tl: 'Iba pang paglabag', id: 'Pelanggaran lain', my: 'အျခားခ်ိဳးေဖာက္မႈ', pt: 'Outras infracoes', fr: 'Autres infractions', it: 'Altre violazioni' }
+  };
+  function localizeCategory(cat, lang) {
+    if (lang === 'ja') return cat;
+    return CATEGORY_I18N[cat]?.[lang] || CATEGORY_I18N[cat]?.en || cat;
+  }
+  const TXT = {
+    ja: { pageTitle: '結果発表', pageSub: '自転車 違反行為クイズ', scoreSuffix: '問正解', loading: '結果を読み込んでいます…', retry: '🔄 もう一度チャレンジ！', share: '𝕏 結果をシェア', reviewCap: '↓↓ 問題の振り返り ↓↓', reviewTitle: '📋 問題の振り返り', nextQuiz: '次は標識クイズに挑戦！', rankPerfect: '🏆 パーフェクト合格！', rankGreat: '⭐ 優秀！', rankGood: '👍 まずまず！', rankTry: '📖 要復習！', msgPerfect: '素晴らしい！パーフェクトです！自転車の違反行為について完璧に理解できています。', msgGreat: 'お疲れ様でした！あと少しで満点でしたね。間違えた問題の解説を確認して次は満点を目指しましょう。', msgGood: 'お疲れ様でした！基本は押さえていますが、まだ危ない部分があります。解説を確認して復習しましょう。', msgTry: 'お疲れ様でした！まだ覚えるべき違反行為があります。解説を読んで再チャレンジしましょう。', you: 'あなた', correct: '正解', chartCorrect: '正解', chartWrong: '不正解', qUnit: '問', fineLabel: '反則金 目安', penaltyLabel: '罰則', criminalTarget: '刑事罰の対象', shareTweet: (s, t, r) => `🚨 自転車 違反行為クイズ\nスコア：${s} / ${t} 問正解 ${r}\nあなたも挑戦してみよう！ #自転車クイズ #交通安全` },
+    en: { pageTitle: 'Results', pageSub: 'Bicycle Violation Quiz', scoreSuffix: 'correct', loading: 'Loading results...', retry: '🔄 Try Again!', share: '𝕏 Share Result', reviewCap: '↓↓ Review Your Answers ↓↓', reviewTitle: '📋 Answer Review', nextQuiz: 'Try the sign quiz next!', rankPerfect: '🏆 Perfect!', rankGreat: '⭐ Excellent!', rankGood: '👍 Good!', rankTry: '📖 Review Needed', msgPerfect: 'Amazing! Perfect score. You understand bicycle violations very well.', msgGreat: 'Great effort! Review missed questions and aim for full marks next time.', msgGood: 'Good start. Review the missed rules and improve your safety knowledge.', msgTry: 'Please review key rules and try again.', you: 'You', correct: 'Correct', chartCorrect: 'Correct', chartWrong: 'Incorrect', qUnit: 'Q', fineLabel: 'Estimated Fine', penaltyLabel: 'Penalty', criminalTarget: 'Subject to criminal penalty', shareTweet: (s, t, r) => `🚨 Bicycle Violation Quiz\nScore: ${s} / ${t} ${r}\nTake the challenge! #BicycleQuiz #TrafficSafety` },
+    zh: { pageTitle: '结果公布', pageSub: '自行车违规测验', scoreSuffix: '题正确', loading: '正在加载结果…', retry: '🔄 再挑战！', share: '𝕏 分享结果', reviewCap: '↓↓ 回顾答题 ↓↓', reviewTitle: '📋 答题回顾', nextQuiz: '下次挑战标识测验！', rankPerfect: '🏆 满分通过！', rankGreat: '⭐ 优秀！', rankGood: '👍 还不错！', rankTry: '📖 需要复习！', msgPerfect: '太棒了！满分！您对自行车违规行为非常了解。', msgGreat: '辛苦了！差一点满分。请确认答错的题目，下次争取满分。', msgGood: '辛苦了！基础掌握了，但还有不安全的地方。请复习解析。', msgTry: '辛苦了！还有需要记住的违规行为，请读解析再挑战。', you: '你', correct: '正确答案', chartCorrect: '正确', chartWrong: '错误', qUnit: '题', fineLabel: '罚款参考', penaltyLabel: '处罚', criminalTarget: '可能涉及刑事处罚', shareTweet: (s, t, r) => `🚨 自行车违规测验\n得分：${s} / ${t} ${r}\n来挑战吧！ #自行车测验 #交通安全` },
+    ko: { pageTitle: '결과 발표', pageSub: '자전거 위반 퀴즈', scoreSuffix: '문 정답', loading: '결과를 불러오는 중…', retry: '🔄 다시 도전!', share: '𝕏 결과 공유', reviewCap: '↓↓ 문제 복습 ↓↓', reviewTitle: '📋 문제 복습', nextQuiz: '다음은 표지판 퀴즈에 도전!', rankPerfect: '🏆 퍼펙트 합격!', rankGreat: '⭐ 우수!', rankGood: '👍 나쁘지 않아요!', rankTry: '📖 복습 필요!', msgPerfect: '훌륭합니다! 퍼펙트입니다! 자전거 위반 행위에 대해 완벽히 이해하고 있습니다.', msgGreat: '수고하셨습니다! 조금만 더 하면 만점이었어요. 틀린 문제 해설을 확인하고 다음엔 만점을 목표로 하세요.', msgGood: '수고하셨습니다! 기본은 알고 있지만 위험한 부분이 있습니다. 해설을 확인하고 복습하세요.', msgTry: '수고하셨습니다! 아직 기억해야 할 위반 행위가 있습니다. 해설을 읽고 다시 도전하세요.', you: '당신', correct: '정답', chartCorrect: '정답', chartWrong: '오답', qUnit: '문', fineLabel: '예상 범칙금', penaltyLabel: '처벌', criminalTarget: '형사처벌 대상', shareTweet: (s, t, r) => `🚨 자전거 위반 퀴즈\n점수: ${s} / ${t} ${r}\n도전해 보세요! #자전거퀴즈 #교통안전` },
+    vi: { pageTitle: 'Ket qua', pageSub: 'Trac nghiem vi pham xe dap', scoreSuffix: 'cau dung', loading: 'Dang tai ket qua...', retry: '🔄 Thu lai!', share: '𝕏 Chia se ket qua', reviewCap: '↓↓ Xem lai cau tra loi ↓↓', reviewTitle: '📋 Xem lai cau tra loi', nextQuiz: 'Thu quiz bien bao tiep theo!', rankPerfect: '🏆 Hoan hao!', rankGreat: '⭐ Xuat sac!', rankGood: '👍 Kha!', rankTry: '📖 Can on tap!', msgPerfect: 'Tuyet voi! Diem hoan hao. Ban hieu rat ro ve vi pham xe dap.', msgGreat: 'Co gang tot! Xem lai cac cau sai va co dat diem toan phan lan sau.', msgGood: 'Tot! Co ban da nam nhung van con nhung phan chua an toan. Hay on tap them.', msgTry: 'Hay xem lai cac quy tac quan trong va thu lai.', you: 'Ban', correct: 'Dap an dung', chartCorrect: 'Dung', chartWrong: 'Sai', qUnit: 'C', fineLabel: 'Muc phat tham khao', penaltyLabel: 'Xu phat', criminalTarget: 'Co the bi xu ly hinh su', shareTweet: (s, t, r) => `🚨 Trac nghiem vi pham xe dap\nDiem: ${s} / ${t} ${r}\nHay thu suc! #BicycleQuiz #TrafficSafety` },
+    tl: { pageTitle: 'Mga Resulta', pageSub: 'Bicycle Violation Quiz', scoreSuffix: 'tamang sagot', loading: 'Nino-load ang mga resulta...', retry: '🔄 Subukan Ulit!', share: '𝕏 I-share ang Resulta', reviewCap: '↓↓ Suriin ang iyong mga Sagot ↓↓', reviewTitle: '📋 Pagsusuri ng mga Sagot', nextQuiz: 'Subukan ang sign quiz!', rankPerfect: '🏆 Perpekto!', rankGreat: '⭐ Mahusay!', rankGood: '👍 Mabuti!', rankTry: '📖 Kailangan ng Pag-aaral', msgPerfect: 'Kamangha-mangha! Perpektong marka. Naiintindihan mo nang husto ang bicycle violations.', msgGreat: 'Magaling! Suriin ang mga napalyang tanong at layunin ang perpektong marka sa susunod.', msgGood: 'Magandang simula. Suriin ang mga napalyang tuntunin upang mapabuti ang kaalaman sa kaligtasan.', msgTry: 'Pakisuri ang mga pangunahing tuntunin at subukan ulit.', you: 'Ikaw', correct: 'Tamang sagot', chartCorrect: 'Tama', chartWrong: 'Mali', qUnit: 'T', fineLabel: 'Tantyang Multa', penaltyLabel: 'Parusa', criminalTarget: 'Sakop ng parusang kriminal', shareTweet: (s, t, r) => `🚨 Bicycle Violation Quiz\nScore: ${s} / ${t} ${r}\nSubukan mo! #BicycleQuiz #TrafficSafety` },
+    id: { pageTitle: 'Hasil', pageSub: 'Kuis Pelanggaran Sepeda', scoreSuffix: 'benar', loading: 'Memuat hasil...', retry: '🔄 Coba Lagi!', share: '𝕏 Bagikan Hasil', reviewCap: '↓↓ Tinjau Jawaban Anda ↓↓', reviewTitle: '📋 Tinjauan Jawaban', nextQuiz: 'Coba kuis rambu selanjutnya!', rankPerfect: '🏆 Sempurna!', rankGreat: '⭐ Luar Biasa!', rankGood: '👍 Bagus!', rankTry: '📖 Perlu Belajar', msgPerfect: 'Luar biasa! Nilai sempurna. Anda sangat memahami pelanggaran sepeda.', msgGreat: 'Kerja bagus! Tinjau soal yang salah dan targetkan nilai sempurna berikutnya.', msgGood: 'Awal yang baik. Tinjau aturan yang terlewat dan tingkatkan pengetahuan keselamatan Anda.', msgTry: 'Tolong tinjau aturan penting dan coba lagi.', you: 'Kamu', correct: 'Jawaban benar', chartCorrect: 'Benar', chartWrong: 'Salah', qUnit: 'S', fineLabel: 'Perkiraan Denda', penaltyLabel: 'Sanksi', criminalTarget: 'Dapat terkena pidana', shareTweet: (s, t, r) => `🚨 Kuis Pelanggaran Sepeda\nSkor: ${s} / ${t} ${r}\nCoba sekarang! #KuisSepeda #KeselamatanLaluLintas` },
+    my: { pageTitle: 'ရလဒ္', pageSub: 'စက္ဘီးစည္းကမ္း Quiz', scoreSuffix: 'မွန္ကန္', loading: 'ရလဒ္ကိုတင္ေနသည္…', retry: '🔄 ထပ္မံၾကိဳးစားမည္', share: '𝕏 ရလဒ္မွ်ေဝမည္', reviewCap: '↓↓ အေျဖမ်ားျပန္စစ္ေဆး ↓↓', reviewTitle: '📋 အေျဖမ်ားျပန္သံုးသပ္', nextQuiz: 'ေနာက္တစ္ခုကိုၾကိဳးစားပါ!', rankPerfect: '🏆 ပြည့္စံုသည္!', rankGreat: '⭐ ထူးခြၽန္သည္!', rankGood: '👍 ေကာင္းသည္!', rankTry: '📖 ျပန္ေလ့လာသင့္သည္', msgPerfect: 'အံ့ဖြယ္ေကာင္းသည္! ပြည့္စံုသည္. စက္ဘီးခ်ိဳးေဖာက္မႈကို ေကာင္းစြာနားလည္သည္.', msgGreat: 'ေကာင္းသည္! မွားသည့္ေမးခြန္းမ်ားကိုျပန္ၾကည့္ပါ.', msgGood: 'ေကာင္းသည္. အေျခခံသိသည္ေသာ္လည္း မသိေသးသည့္အပိုင္းရိွသည္.', msgTry: 'အဓိကစည္းကမ္းမ်ားကိုျပန္ေလ့လာၿပီး ထပ္မံၾကိဳးစားပါ.', you: 'သင္', correct: 'အမွန္အေျဖ', chartCorrect: 'မွန္ကန္', chartWrong: 'မွားသည္', qUnit: 'ေ', fineLabel: 'ခန္႔မွန္းဒဏ္ေငြ', penaltyLabel: 'အျပစ္ေပးမႈ', criminalTarget: 'ရာဇဝတ္ျပစ္ဒဏ္သက္ေရာက္ႏိုင္သည္', shareTweet: (s, t, r) => `🚨 စက္ဘီးစည္းကမ္း Quiz\nရမွတ္: ${s} / ${t} ${r}\nစမ္းၾကည့္ပါ!` },
+    pt: { pageTitle: 'Resultados', pageSub: 'Quiz de Infracoes de Bicicleta', scoreSuffix: 'acertos', loading: 'Carregando resultados...', retry: '🔄 Tentar Novamente!', share: '𝕏 Compartilhar Resultado', reviewCap: '↓↓ Revise suas Respostas ↓↓', reviewTitle: '📋 Revisao das Respostas', nextQuiz: 'Experimente o quiz de placas!', rankPerfect: '🏆 Perfeito!', rankGreat: '⭐ Excelente!', rankGood: '👍 Bom!', rankTry: '📖 Precisa Revisar', msgPerfect: 'Incrivel! Pontuacao perfeita. Voce entende muito bem as infracoes de bicicleta.', msgGreat: 'Otimo esforco! Revise as questoes erradas e tente a pontuacao maxima na proxima vez.', msgGood: 'Bom inicio. Revise as regras esquecidas e melhore seu conhecimento de seguranca.', msgTry: 'Por favor, revise as regras principais e tente novamente.', you: 'Voce', correct: 'Resposta correta', chartCorrect: 'Certo', chartWrong: 'Errado', qUnit: 'Q', fineLabel: 'Multa estimada', penaltyLabel: 'Penalidade', criminalTarget: 'Sujeito a penalidade criminal', shareTweet: (s, t, r) => `🚨 Quiz de Infracoes de Bicicleta\nPontuacao: ${s} / ${t} ${r}\nExperimente! #QuizBicicleta #SegurancaViaria` },
+    fr: { pageTitle: 'Resultats', pageSub: 'Quiz des infractions a velo', scoreSuffix: 'bonnes reponses', loading: 'Chargement des resultats...', retry: '🔄 Reessayer!', share: '𝕏 Partager le resultat', reviewCap: '↓↓ Revoyez vos reponses ↓↓', reviewTitle: '📋 Revue des reponses', nextQuiz: 'Essayez le quiz des panneaux!', rankPerfect: '🏆 Parfait!', rankGreat: '⭐ Excellent!', rankGood: '👍 Bien!', rankTry: '📖 A Reviser', msgPerfect: 'Fantastique! Score parfait. Vous comprenez parfaitement les infractions a velo.', msgGreat: 'Beau travail! Revoyez les questions ratees et visez la perfection la prochaine fois.', msgGood: 'Bon debut. Revoyez les regles oubliees et ameliorez votre connaissance de la securite.', msgTry: 'Veuillez revoir les regles essentielles et reessayer.', you: 'Vous', correct: 'Bonne reponse', chartCorrect: 'Correct', chartWrong: 'Incorrect', qUnit: 'Q', fineLabel: 'Amende estimee', penaltyLabel: 'Sanction', criminalTarget: 'Peut relever du penal', shareTweet: (s, t, r) => `🚨 Quiz des infractions a velo\nScore: ${s} / ${t} ${r}\nEssayez! #QuizVelo #SecuriteRoutiere` },
+    it: { pageTitle: 'Risultati', pageSub: 'Quiz sulle violazioni in bicicletta', scoreSuffix: 'risposte corrette', loading: 'Caricamento risultati...', retry: '🔄 Riprova!', share: '𝕏 Condividi il risultato', reviewCap: '↓↓ Rivedi le tue risposte ↓↓', reviewTitle: '📋 Revisione delle risposte', nextQuiz: 'Prova il quiz sui segnali!', rankPerfect: '🏆 Perfetto!', rankGreat: '⭐ Eccellente!', rankGood: '👍 Bene!', rankTry: '📖 Da Rivedere', msgPerfect: 'Fantastico! Punteggio perfetto. Capisci benissimo le violazioni in bicicletta.', msgGreat: 'Ottimo lavoro! Rivedi le domande sbagliate e punta al massimo la prossima volta.', msgGood: 'Buon inizio. Rivedi le regole dimenticate e migliora la tua conoscenza della sicurezza.', msgTry: 'Per favore rivedi le regole principali e riprova.', you: 'Tu', correct: 'Risposta corretta', chartCorrect: 'Corretto', chartWrong: 'Errato', qUnit: 'D', fineLabel: 'Sanzione stimata', penaltyLabel: 'Sanzione', criminalTarget: 'Soggetto a pena penale', shareTweet: (s, t, r) => `🚨 Quiz sulle violazioni in bicicletta\nPunteggio: ${s} / ${t} ${r}\nProva anche tu! #QuizBici #SicurezzaStradale` }
+  };
+  const lang = localStorage.getItem('bicycleRulesQuizLang');
+  const cur = SUPPORTED.includes(lang) ? lang : 'ja';
+  const tx = TXT[cur] || TXT.en;
+  document.documentElement.lang = cur;
+  const langSel = document.getElementById('lang-select');
+  langSel.value = cur;
+  langSel.addEventListener('change', (e) => {
+    localStorage.setItem('bicycleRulesQuizLang', e.target.value);
+    window.location.reload();
+  });
+  document.getElementById('result-page-title').textContent = tx.pageTitle;
+  document.getElementById('result-page-subtitle').textContent = tx.pageSub;
+  document.getElementById('score-suffix').textContent = tx.scoreSuffix;
+  document.getElementById('result-message').textContent = tx.loading;
+  document.getElementById('btn-retry-top').textContent = tx.retry;
+  document.getElementById('btn-retry-bottom').textContent = tx.retry;
+  document.getElementById('btn-share').textContent = tx.share;
+  document.getElementById('review-caption').textContent = tx.reviewCap;
+  document.getElementById('review-title').textContent = tx.reviewTitle;
+  document.getElementById('btn-next-quiz').textContent = tx.nextQuiz;
 
   /* ---- データ取得 ---- */
   const stored = localStorage.getItem('bicycleRulesQuizResult');
@@ -117,24 +181,24 @@
 
   if (score === total) {
     rankClass = 'rank-perfect';
-    rankText  = '🏆 パーフェクト合格！';
+    rankText  = tx.rankPerfect;
     icon      = '🏆';
-    message   = '素晴らしい！パーフェクトです！自転車の違反行為について完璧に理解できています。これからも安全なサイクルライフを楽しんでください！ぜひ周りの方にも教えてあげましょう。';
+    message   = tx.msgPerfect;
   } else if (pct >= 0.8) {
     rankClass = 'rank-great';
-    rankText  = '⭐ 優秀！';
+    rankText  = tx.rankGreat;
     icon      = '⭐';
-    message   = 'お疲れ様でした！あと少しで満点でしたね。間違えた問題の解説を確認して、次は満点を目指しましょう。自転車の違反は知らずに犯してしまうことが多いので、しっかり復習が大切です！';
+    message   = tx.msgGreat;
   } else if (pct >= 0.6) {
     rankClass = 'rank-good';
-    rankText  = '👍 まずまず！';
+    rankText  = tx.rankGood;
     icon      = '👍';
-    message   = 'お疲れ様でした！基本は押さえていますが、まだ危ない部分があります。特に間違えた問題の解説と反則金の金額をしっかり確認しましょう。2026年5月から自転車にも青切符が適用されます！';
+    message   = tx.msgGood;
   } else {
     rankClass = 'rank-try';
-    rankText  = '📖 要復習！';
+    rankText  = tx.rankTry;
     icon      = '📖';
-    message   = 'お疲れ様でした！まだ覚えるべき違反行為がたくさんあります。2026年5月の改正道路交通法施行で自転車にも青切符が交付されます。解説をしっかり読んで、再チャレンジしましょう！';
+    message   = tx.msgTry;
   }
 
   document.getElementById('result-icon').textContent    = icon;
@@ -148,7 +212,7 @@
   new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['正解', '不正解'],
+      labels: [tx.chartCorrect, tx.chartWrong],
       datasets: [{
         data: [score, total - score],
         backgroundColor: ['#43A047', '#EF9A9A'],
@@ -169,7 +233,7 @@
         },
         tooltip: {
           callbacks: {
-            label: ctx => ` ${ctx.label}: ${ctx.parsed} 問`,
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} ${tx.qUnit}`,
           },
         },
       },
@@ -187,7 +251,7 @@
         ctx.fillText(`${score}/${total}`, width / 2, height / 2 - 16);
         ctx.font      = `1rem 'M PLUS Rounded 1c', sans-serif`;
         ctx.fillStyle = '#546E7A';
-        ctx.fillText('正解', width / 2, height / 2 + 18);
+        ctx.fillText(tx.chartCorrect, width / 2, height / 2 + 18);
         ctx.restore();
       },
     }],
@@ -225,7 +289,7 @@
         </div>` : '';
 
       // カテゴリバッジ
-      const catBadgeHtml = `<span class="review-category" style="background:${catColor}">${ans.category}</span>`;
+      const catBadgeHtml = `<span class="review-category" style="background:${catColor}">${localizeCategory(ans.category, cur)}</span>`;
 
       // 正誤ヘッダー
       const headerHtml = `
@@ -239,12 +303,12 @@
       const answerHtml = `
         <div class="review-answers">
           <p class="review-ans-row ${isOk ? 'ans-ok' : 'ans-ng'}">
-            <span class="ans-label">あなた</span>
+            <span class="ans-label">${tx.you}</span>
             <span class="ans-value">${isOk ? '✅' : '❌'} ${ans.selectedText}</span>
           </p>
           ${!isOk ? `
           <p class="review-ans-row ans-correct">
-            <span class="ans-label">正解</span>
+            <span class="ans-label">${tx.correct}</span>
             <span class="ans-value">⭕ ${ans.correctText}</span>
           </p>` : ''}
         </div>`;
@@ -257,9 +321,9 @@
         const cleanText    = ans.explanation.replace(/反則金（目安：[^）]+）。?/g, '').trim();
         let badgeHtml = '';
         if (fineMatch) {
-          badgeHtml = `<div class="fine-badge">💴 <span class="fine-label">反則金 目安</span>${fineMatch[1]}</div>`;
+          badgeHtml = `<div class="fine-badge">💴 <span class="fine-label">${tx.fineLabel}</span>${fineMatch[1]}</div>`;
         } else if (criminalMatch) {
-          badgeHtml = `<div class="fine-badge fine-criminal">⚖️ <span class="fine-label">罰則</span>刑事罰の対象</div>`;
+          badgeHtml = `<div class="fine-badge fine-criminal">⚖️ <span class="fine-label">${tx.penaltyLabel}</span>${tx.criminalTarget}</div>`;
         }
         expHtml = `<p class="review-explanation">${cleanText}</p>${badgeHtml}`;
       }
@@ -271,11 +335,7 @@
 
   /* ---- シェアボタン ---- */
   document.getElementById('btn-share').addEventListener('click', () => {
-    const text = encodeURIComponent(
-      `🚨 自転車 違反行為クイズ\n` +
-      `スコア：${score} / ${total} 問正解 ${rankText}\n` +
-      `あなたも挑戦してみよう！ #自転車クイズ #青切符 #交通安全`
-    );
+    const text = encodeURIComponent(tx.shareTweet(score, total, rankText));
     const url = encodeURIComponent(window.location.origin + '/rules/index.html');
     window.open(
       `https://twitter.com/intent/tweet?text=${text}&url=${url}`,

@@ -21,15 +21,32 @@
 <div class="app-wrapper"> 
 	
 	<!-- ヘッダー -->
-	<header class="app-header"> <span class="logo-icon">🚨</span>
-		<h1>自転車 違反行為クイズ</h1>
-		<p class="sub-title">青切符で学ぶ！交通安全</p>
+	<header class="app-header">
+		<div class="lang-switcher">
+			<label for="lang-select" id="lang-label">Languages</label>
+			<select id="lang-select" aria-label="Languages">
+				<option value="ja">🇯🇵 日本語</option>
+				<option value="en">🇺🇸 English</option>
+				<option value="zh">🇨🇳 中文（普通话）</option>
+				<option value="ko">🇰🇷 한국어</option>
+				<option value="vi">🇻🇳 Tiếng Việt</option>
+				<option value="tl">🇵🇭 Filipino</option>
+				<option value="id">🇮🇩 Bahasa Indonesia</option>
+				<option value="my">🇲🇲 မြန်မာဘာသာ</option>
+				<option value="pt">🇵🇹 Português</option>
+				<option value="fr">🇫🇷 Français</option>
+				<option value="it">🇮🇹 Italiano</option>
+			</select>
+		</div>
+		<span class="logo-icon">🚨</span>
+		<h1 id="app-title">自転車 違反行為クイズ</h1>
+		<p class="sub-title" id="app-subtitle">青切符で学ぶ！交通安全</p>
 	</header>
 	
 	<!-- 中間カード -->
 	<div class="interstitial-card">
-		<h2>🎉 全問終了！</h2>
-		<p>お疲れ様でした。<br>
+		<h2 id="done-title">🎉 全問終了！</h2>
+		<p id="done-text">お疲れ様でした。<br>
 			結果を計算しています…</p>
 		
 		<!-- カウントダウン -->
@@ -59,6 +76,35 @@
 <small class="copy">&copy; 2026 HPLite</small> 
 <script>
 (function () {
+  const SUPPORTED = ['ja', 'en', 'zh', 'ko', 'vi', 'tl', 'id', 'my', 'pt', 'fr', 'it'];
+  const textMap = {
+    ja: { title: '自転車 違反行為クイズ', sub: '青切符で学ぶ！交通安全', done: '🎉 全問終了！', doneText: 'お疲れ様でした。<br>結果を計算しています…', resultBtn: '診断結果を見る 📊' },
+    en: { title: 'Bicycle Violation Quiz', sub: 'Traffic safety check', done: '🎉 Quiz Complete!', doneText: 'Great job.<br>Calculating your result...', resultBtn: 'See Result 📊' },
+    zh: { title: '自行车违规测验', sub: '交通安全检查', done: '🎉 全部完成！', doneText: '辛苦了。<br>正在计算结果…', resultBtn: '查看结果 📊' },
+    ko: { title: '자전거 위반 퀴즈', sub: '교통안전 확인', done: '🎉 모든 문제 완료!', doneText: '수고하셨습니다.<br>결과를 계산 중입니다…', resultBtn: '결과 보기 📊' },
+    vi: { title: 'Trac nghiem vi pham xe dap', sub: 'Kiem tra an toan giao thong', done: '🎉 Hoan thanh!', doneText: 'Ban da lam xong.<br>Dang tinh ket qua...', resultBtn: 'Xem ket qua 📊' },
+    tl: { title: 'Bicycle Violation Quiz', sub: 'Pagsusuri sa traffic safety', done: '🎉 Tapos na!', doneText: 'Salamat sa pagsagot.<br>Kino-compute ang resulta...', resultBtn: 'Tingnan ang Resulta 📊' },
+    id: { title: 'Kuis Pelanggaran Sepeda', sub: 'Cek keselamatan lalu lintas', done: '🎉 Selesai semua!', doneText: 'Terima kasih.<br>Sedang menghitung hasil...', resultBtn: 'Lihat Hasil 📊' },
+    my: { title: 'စက္ဘီးစည္းကမ္း Quiz', sub: 'လမ္းအသံုးျပဳလံုျခံဳေရး စစ္ေဆးမႈ', done: '🎉 ေမးခြန္းအားလံုး ၿပီးပါၿပီ!', doneText: 'ေက်းဇူးတင္ပါသည္။<br>ရလဒ္ကိုတြက္ခ်က္ေနပါသည္…', resultBtn: 'ရလဒ္ၾကည့္မည္ 📊' },
+    pt: { title: 'Quiz de Infracoes de Bicicleta', sub: 'Verificacao de seguranca', done: '🎉 Quiz concluido!', doneText: 'Obrigado.<br>Calculando seu resultado...', resultBtn: 'Ver Resultado 📊' },
+    fr: { title: 'Quiz des infractions a velo', sub: 'Verification de securite routiere', done: '🎉 Quiz termine !', doneText: 'Bravo.<br>Calcul du resultat en cours...', resultBtn: 'Voir le resultat 📊' },
+    it: { title: 'Quiz violazioni bici', sub: 'Controllo sicurezza stradale', done: '🎉 Quiz completato!', doneText: 'Grazie.<br>Calcolo del risultato in corso...', resultBtn: 'Vedi risultato 📊' }
+  };
+  const lang = localStorage.getItem('bicycleRulesQuizLang');
+  const cur = SUPPORTED.includes(lang) ? lang : 'ja';
+  const tx = textMap[cur];
+  document.documentElement.lang = cur;
+  document.getElementById('lang-select').value = cur;
+  document.getElementById('app-title').textContent = tx.title;
+  document.getElementById('app-subtitle').textContent = tx.sub;
+  document.getElementById('done-title').textContent = tx.done;
+  document.getElementById('done-text').innerHTML = tx.doneText;
+  document.getElementById('btn-result').textContent = tx.resultBtn;
+  document.getElementById('lang-select').addEventListener('change', (e) => {
+    localStorage.setItem('bicycleRulesQuizLang', e.target.value);
+    window.location.reload();
+  });
+
   // localStorage にデータがなければトップへ
   if (!localStorage.getItem('bicycleRulesQuizResult')) {
     window.location.href = 'index.html';
