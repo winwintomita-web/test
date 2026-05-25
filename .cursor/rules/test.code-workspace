@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../Cloude_C"
+		}
+	],
+	"settings": {
+		"explorer.confirmDelete": true,
+		"explorer.confirmDragAndDrop": "keyboard",
+		"files.enableTrash": true,
+		"git.confirmSync": true
+	}
+}

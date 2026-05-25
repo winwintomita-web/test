@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SDWSE6MTHS"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SDWSE6MTHS'), {
+    'content_group': 'アプリ' 
+  });
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Dang tinh ket qua... | Quiz vi pham xe dap</title>
+<link rel="stylesheet" href="css/style.css?v04">
+</head>
+<body>
+<div class="app-wrapper"> 
+	
+	<!-- ヘッダー -->
+	<header class="app-header"> <span class="logo-icon">🚨</span>
+		<h1>Quiz vi pham xe dap</h1>
+		<p class="sub-title">Hoc ve 青切符 de di xe an toan tai Nhat</p>
+	</header>
+	
+	<!-- 中間カード -->
+	<div class="interstitial-card">
+		<h2>🎉 Hoan thanh tat ca cau hoi!</h2>
+		<p>Ban da lam xong.<br>
+			He thong dang tinh ket qua...</p>
+		
+		<!-- カウントダウン -->
+		<div class="countdown-circle" id="countdown">5</div>
+		
+		<!-- 結果ボタン（カウント後に表示） -->
+		<button class="btn-result" id="btn-result" onclick="goResult()"> Xem ket qua 📊 </button>
+	</div>
+</div>
+<!-- /app-wrapper --> 
+
+<!-- 広告（下部） -->
+<aside> 
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800"
+     crossorigin="anonymous"></script> 
+	<!-- 自転車ルール（HPL app） --> 
+	<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-2445184492315800"
+     data-ad-slot="9431452902"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins> 
+	<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+	</script> 
+</aside>
+<small class="copy">&copy; 2026 HPLite</small> 
+<script>
+(function () {
+  // localStorage にデータがなければトップへ
+  if (!localStorage.getItem('bicycleRulesQuizResult')) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  let count = 5;
+  const el = document.getElementById('countdown');
+  const btn = document.getElementById('btn-result');
+
+  const timer = setInterval(() => {
+    count--;
+    el.textContent = count;
+    if (count <= 2) {
+      btn.classList.add('visible');
+    }
+    if (count <= 0) {
+      clearInterval(timer);
+      el.textContent = '✓';
+      // 自動遷移
+      window.location.href = 'result.html';
+    }
+  }, 1000);
+})();
+
+function goResult() {
+  window.location.href = 'result.html';
+}
+</script>
+</body>
+</html>

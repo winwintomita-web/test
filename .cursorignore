@@ -1,0 +1,16 @@
+﻿# エージェントの索引・コンテキストから除外（漏洩リスク低減）
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+**/secrets/**
+**/*credentials*
+**/.aws/credentials
+**/id_rsa
+**/id_ed25519
+**/*.key
+.npmrc
+.netrc
+**/node_modules/

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HPLite概算見積りアプリ</title>
+  <style>
+    body { margin: 0; background: #f5f7fb; color: #1f2937; font-family: "Yu Gothic", Meiryo, sans-serif; }
+    .wrap { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid #d8e0ec; border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+    h1, h2, h3 { margin: 0 0 10px; }
+    p { margin: 0 0 8px; }
+    .sub { color: #5b6675; }
+    .grid { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+    label { display: block; font-weight: 700; margin-bottom: 5px; }
+    input { width: 100%; padding: 10px; border: 1px solid #b8c4d7; border-radius: 8px; }
+    button { border: 0; border-radius: 8px; font-weight: 700; padding: 10px 14px; cursor: pointer; }
+    .primary { background: #0f5ec6; color: #fff; }
+    .ghost { background: #eaf2ff; color: #0f4289; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .hidden { display: none; }
+    .status { margin-top: 8px; font-size: 13px; color: #334155; }
+    .status.error { color: #b91c1c; }
+    pre { background: #111827; color: #e5e7eb; border-radius: 8px; padding: 12px; white-space: pre-wrap; overflow: auto; }
+    .price { font-size: 21px; font-weight: 800; color: #11468a; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .table th, .table td { border: 1px solid #d8e0ec; padding: 8px; text-align: left; font-size: 14px; }
+    .table th { background: #f1f5fb; }
+    ul { margin-top: 8px; padding-left: 20px; }
+    progress { width: 220px; height: 12px; }
+    .analyzing { margin: 6px 0 0; color: #2563eb; font-size: 12px; animation: fadeBlink 1.2s ease-in-out infinite; }
+    @keyframes fadeBlink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>見積り作成App（HPLite）</h1>
+      <p class="sub">対象ドメインを入れるだけで、A4縦PDFの概算見積りレポートを作成します。</p>
+      <div class="grid">
+        <div>
+          <label for="domain">対象ドメイン</label>
+          <input id="domain" value="" placeholder="example.com">
+        </div>
+        <div class="actions">
+          <button id="btnGenerate" class="primary">レポート生成</button>
+          <progress id="genProgress" class="hidden"></progress>
+        </div>
+        <p id="analyzingText" class="analyzing hidden">分析中</p>
+      </div>
+      <p id="sourceStatus" class="status">見積りデータを読み込み中...</p>
+    </section>
+
+    <section id="report" class="card"></section>
+
+    <section class="card">
+      <div class="actions">
+        <button id="btnPdf" class="primary hidden">PDFレポート</button>
+        <button id="btnNewReport" class="ghost hidden">新しいレポートを生成</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    const DATA_FILES = {
+      brief: "mitumori20260424.txt",
+      pricing: "見積り20260424.txt"
+    };
+
+    const defaults = {
+      monthlyBase: 8800,
+      yearlyBase: 96800,
+      build: {
+        slideshow: 11000,
+        logo: 22000,
+        banner: 3300,
+        photoFix: 3300
+      },
+      rental: {
+        pageExtra: 1100,
+        form: 1100,
+        sns: 550,
+        backup: 1100,
+        emailExtra: 110
+      }
+    };
+
+    let promptText = "";
+    let pricingText = "";
+    let pricingData = structuredClone(defaults);
+    let section2Cache = null;
+    let optionAnalysisCache = null;
+
+    function yen(v) { return "¥" + Number(v).toLocaleString("ja-JP"); }
+    function today() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function readYen(text, pattern, fallback) {
+      const m = text.match(pattern);
+      return m ? Number(m[1].replaceAll(",", "")) : fallback;
+    }
+
+    function parsePricing(text) {
+      return {
+        monthlyBase: readYen(text, /月払いプラン\s*\|\s*([\d,]+)円/, defaults.monthlyBase),
+        yearlyBase: readYen(text, /年払いプラン\s*\|\s*([\d,]+)円/, defaults.yearlyBase),
+        build: {
+          slideshow: readYen(text, /スライドショー\s*\|\s*([\d,]+)円/, defaults.build.slideshow),
+          logo: readYen(text, /ロゴ作成\s*\|\s*([\d,]+)円/, defaults.build.logo),
+          banner: readYen(text, /バナーボタン作成\s*\|\s*([\d,]+)円/, defaults.build.banner),
+          photoFix: readYen(text, /写真修正\s*\|\s*([\d,]+)円/, defaults.build.photoFix)
+        },
+        rental: {
+          pageExtra: readYen(text, /ページ追加（1ページ）\s*\|\s*([\d,]+)円/, defaults.rental.pageExtra),
+          form: readYen(text, /フォーム\s*\|\s*([\d,]+)円/, defaults.rental.form),
+          sns: readYen(text, /SNS連携\s*\|\s*([\d,]+)円/, defaults.rental.sns),
+          backup: readYen(text, /バックアップ（週1回・7週分保存）\s*\|\s*([\d,]+)円/, defaults.rental.backup),
+          emailExtra: readYen(text, /メールアドレス追加（1個）\s*\|\s*([\d,]+)円/, defaults.rental.emailExtra)
+        }
+      };
+    }
+
+    function estimateIndustry(sourceText) {
+      const t = (sourceText || "").toLowerCase();
+      const score = { "レンタカー": 0, "美容": 0, "不動産": 0, "医療": 0 };
+      if (/レンタカー|rental car|rent a car|貸渡|車種|ハイエース|空港送迎/.test(t)) score["レンタカー"] += 3;
+      if (/美容|サロン|エステ|hair|beauty|ネイル/.test(t)) score["美容"] += 3;
+      if (/不動産|賃貸|物件|売買|real estate|マンション/.test(t)) score["不動産"] += 3;
+      if (/病院|クリニック|医療|clinic|medical|診療/.test(t)) score["医療"] += 3;
+      const best = Object.entries(score).sort((a, b) => b[1] - a[1])[0];
+      if (best[1] > 0) return best[0];
+      return "一般企業";
+    }
+
+    function estimateMarketByIndustry(industry) {
+      const table = {
+        "レンタカー": { market: 1500000, range: "100万円〜300万円" },
+        "美容": { market: 1200000, range: "80万円〜250万円" },
+        "不動産": { market: 1800000, range: "120万円〜350万円" },
+        "医療": { market: 2000000, range: "150万円〜400万円" },
+        "一般企業": { market: 1000000, range: "70万円〜200万円" }
+      };
+      return table[industry] || table["一般企業"];
+    }
+
+    async function analyzeSite(domain) {
+      const target = domain.replace(/^https?:\/\//i, "");
+      const sourceUrl = `https://r.jina.ai/http://${target}?_=${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      try {
+        const res = await fetch(sourceUrl, { cache: "no-store" });
+        if (!res.ok) return null;
+        const text = await res.text();
+        const titleMatch = text.match(/Title:\s*(.+)/);
+        const siteName = (titleMatch && titleMatch[1] ? titleMatch[1] : target).trim();
+        const lines = text.split("\n");
+        const linkRows = lines
+          .filter((line) => /\[[^\]]+\]\((https?:\/\/|\/)/.test(line))
+          .slice(0, 12);
+        const pagesTotal = Math.max(5, linkRows.length || 8);
+        const nodes = linkRows.map((line, i) => {
+          const m = line.match(/\[([^\]]+)\]/);
+          return `${String.fromCharCode(66 + i)}[${(m && m[1] ? m[1] : "ページ").replaceAll('"', "")}]`;
+        });
+        const edges = nodes.length
+          ? nodes.map((n) => `A --> ${n}`)
+          : ["A --> B[サービス]", "A --> C[会社情報]", "A --> D[お問い合わせ]"];
+        const industry = estimateIndustry(text);
+        const marketInfo = estimateMarketByIndustry(industry);
+        const firstThree = linkRows.slice(0, 3).map((line) => {
+          const m = line.match(/\[([^\]]+)\]/);
+          return (m && m[1] ? m[1] : "ページ").trim();
+        });
+        const markdownImageCount = (text.match(/!\[[^\]]*\]\([^)]+\)/g) || []).length;
+        const htmlImageCount = (text.match(/<img\s/gi) || []).length;
+        const urlImageCount = (text.match(/\.(png|jpg|jpeg|gif|webp|svg)(\?|$)/gi) || []).length;
+        const imageCount = Math.max(markdownImageCount + htmlImageCount, urlImageCount, 1);
+        const purpose = firstThree[0] ? `${firstThree[0]}を中心に問い合わせ導線を強化` : "";
+        const content = firstThree.length ? firstThree.join(" / ") : "";
+        const flow = firstThree.length > 1 ? `ホーム → ${firstThree.join(" → ")}` : "";
+        return {
+          industry,
+          siteName,
+          pagesTotal,
+          summary: `${siteName} を再分析し、主要ページと導線を抽出しました。`,
+          sitemap: `graph TD\nA[ホーム]\n${edges.join("\n")}`,
+          market: marketInfo.market,
+          marketRange: marketInfo.range,
+          purpose,
+          content,
+          flow,
+          imageCount
+        };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function loadSourceText() {
+      const status = document.getElementById("sourceStatus");
+      try {
+        const [briefRes, pricingRes] = await Promise.all([
+          fetch(DATA_FILES.brief),
+          fetch(DATA_FILES.pricing)
+        ]);
+        if (!briefRes.ok || !pricingRes.ok) throw new Error("見積ファイルの取得に失敗しました");
+        promptText = await briefRes.text();
+        pricingText = await pricingRes.text();
+        pricingData = parsePricing(pricingText);
+        status.classList.add("hidden");
+      } catch (e) {
+        pricingData = structuredClone(defaults);
+        status.classList.add("error");
+        status.textContent = "見積ファイルの読み込みに失敗したため、既定の料金で計算します。";
+      }
+    }
+
+    function calc(domain, analysis) {
+      const issueDate = today();
+      const pagesTotal = analysis && analysis.pagesTotal ? analysis.pagesTotal : 5;
+      const pagesExtra = Math.max(0, pagesTotal - 5);
+      const analyzedImageCount = analysis && analysis.imageCount ? analysis.imageCount : 1;
+      const buildItems = [
+        { name: "スライドショー", qty: 1, unit: pricingData.build.slideshow, amount: pricingData.build.slideshow },
+        { name: "写真・イラスト等", qty: analyzedImageCount, unit: pricingData.build.photoFix, amount: pricingData.build.photoFix * analyzedImageCount }
+      ];
+      const rentalItems = [
+        { name: "ページ追加", qty: pagesExtra, unit: pricingData.rental.pageExtra, amount: pricingData.rental.pageExtra * pagesExtra },
+        { name: "フォーム", qty: 2, unit: pricingData.rental.form, amount: pricingData.rental.form * 2 },
+        { name: "SNS連携", qty: 1, unit: pricingData.rental.sns, amount: pricingData.rental.sns }
+      ];
+      const buildTotal = buildItems.reduce((sum, x) => sum + x.amount, 0);
+      const monthlyRental = rentalItems.reduce((sum, x) => sum + x.amount, 0);
+      const first = pricingData.monthlyBase * 2 + buildTotal + monthlyRental * 2;
+      const month = pricingData.monthlyBase + monthlyRental;
+      const yearRemaining = pricingData.monthlyBase * 9 + monthlyRental * 9;
+      const year = pricingData.monthlyBase * 11 + monthlyRental * 11;
+      return {
+        domain,
+        title: `${domain}HPLite概算見積り`,
+        issueDate,
+        issueDateShow: issueDate.replaceAll("-", "/"),
+        company: "株式会社LinkNet",
+        market: analysis && analysis.market ? analysis.market : 0,
+        marketRange: analysis && analysis.marketRange ? analysis.marketRange : "",
+        industry: analysis && analysis.industry ? analysis.industry : "",
+        siteName: analysis && analysis.siteName ? analysis.siteName : "",
+        siteSummary: analysis && analysis.summary ? analysis.summary : "",
+        pagesTotal,
+        pagesExtra,
+        buildItems,
+        rentalItems,
+        buildTotal,
+        monthlyRental,
+        first,
+        month,
+        yearRemaining,
+        year,
+        map: analysis && analysis.sitemap ? analysis.sitemap : "",
+        purpose: analysis && analysis.purpose ? analysis.purpose : "",
+        content: analysis && analysis.content ? analysis.content : "",
+        flow: analysis && analysis.flow ? analysis.flow : "",
+        baseMonthly: pricingData.monthlyBase
+      };
+    }
+
+    function render(d) {
+      const buildRows = d.buildItems.map((x) => `<tr><td>${x.name}</td><td>${x.qty}</td><td>${yen(x.unit)}</td><td>${yen(x.amount)}</td></tr>`).join("");
+      const rentalRows = d.rentalItems.map((x) => `<tr><td>${x.name}</td><td>${x.qty}</td><td>${yen(x.unit)}</td><td>${yen(x.amount)}</td></tr>`).join("");
+      const summaryHtml = d.siteSummary ? `<p>${d.siteSummary}</p>` : "";
+      const analysisPointsHtml = [
+        d.purpose ? `<li>主目的: ${d.purpose}</li>` : "",
+        d.content ? `<li>主コンテンツ: ${d.content}</li>` : "",
+        d.flow ? `<li>想定導線: ${d.flow}</li>` : ""
+      ].filter(Boolean).join("");
+      const mapHtml = d.map ? `<h3>1.2 サイト構成図（Site Map）</h3><pre>${d.map}</pre>` : "";
+      const pagesHtml = d.map ? `<p><strong>推定ページ数:</strong> ${d.pagesTotal}ページ（基本5 + 追加${d.pagesExtra}）</p>` : "";
+      document.getElementById("report").innerHTML = `
+        <h2>表紙</h2>
+        <p><strong>タイトル:</strong> ${d.title}</p>
+        <p><strong>発行日:</strong> ${d.issueDateShow}</p>
+        <p><strong>会社名:</strong> ${d.company}</p>
+        <hr>
+        <h2>1. Webサイト構成分析レポート</h2>
+        <h3>1.1 サイト概要</h3>
+        ${summaryHtml}
+        ${analysisPointsHtml ? `<ul>${analysisPointsHtml}</ul>` : ""}
+        ${mapHtml}
+        ${pagesHtml}
+        <h2>2. お見積りシミュレーション</h2>
+        <p>${d.industry ? `業界:${d.industry}` : ""}</p>
+        <p>${d.market ? `相場費用: <span class="price">${yen(d.market)}</span>` : ""}</p>
+        <p>${d.marketRange ? `相場レンジ目安: ${d.marketRange}` : ""}</p>
+        <h2>３．HPLiteの場合</h2>
+
+        <h3>制作オプション内訳（初回加算）</h3>
+        <table class="table">
+          <thead><tr><th>項目</th><th>数量</th><th>単価</th><th>金額</th></tr></thead>
+          <tbody>${buildRows}<tr><th colspan="3">合計</th><th>${yen(d.buildTotal)}</th></tr></tbody>
+        </table>
+
+        <h3>レンタルオプション内訳（月額加算）</h3>
+        <table class="table">
+          <thead><tr><th>項目</th><th>数量</th><th>単価</th><th>金額/月</th></tr></thead>
+          <tbody>${rentalRows}<tr><th colspan="3">合計</th><th>${yen(d.monthlyRental)}</th></tr></tbody>
+        </table>
+
+        <h3>Pattern A：月額プラン</h3>
+        <ul>
+          <li>初回お支払い額: <strong>${yen(d.first)}</strong>（基本料2ヶ月 + 制作オプション + レンタルオプション2ヶ月）</li>
+          <li>月額費用: <strong>${yen(d.month)} / 月</strong>（基本料+レンタルオプション）</li>
+        </ul>
+        <h3>Pattern B：年額一括プラン</h3>
+        <ul>
+          <li>初回お支払い額: <strong>${yen(d.first)}</strong>（基本料2ヶ月 + 制作オプション + レンタルオプション2ヶ月）</li>
+          <li>1年目残り費用: <strong>${yen(d.yearRemaining)} / 年</strong>（基本料9ヶ月 + レンタルオプション9ヶ月）</li>
+          <li>年額費用: <strong>${yen(d.year)} / 年</strong>（基本料11ヶ月 + レンタルオプション11ヶ月）</li>
+        </ul>
+        <h2>４. 補足・前提条件</h2>
+        <ul>
+          <li>算定ページ数: ${d.pagesTotal}ページ（追加${d.pagesExtra}ページ）</li>
+          <li>制作オプション: ${yen(d.buildTotal)}</li>
+          <li>レンタルオプション: ${yen(d.monthlyRental)} / 月</li>
+          <li>あくまでもAIによる概算見積りになります</li>
+        </ul>
+      `;
+    }
+
+    async function toPdf(d) {
+      const { jsPDF } = window.jspdf;
+      const reportEl = document.getElementById("report");
+      const pdfLayout = document.createElement("div");
+      pdfLayout.style.position = "fixed";
+      pdfLayout.style.left = "-10000px";
+      pdfLayout.style.top = "0";
+      pdfLayout.style.width = "1000px";
+      pdfLayout.style.background = "#ffffff";
+      pdfLayout.style.padding = "18px";
+      pdfLayout.style.boxSizing = "border-box";
+      pdfLayout.style.fontFamily = '"Yu Gothic", Meiryo, sans-serif';
+      pdfLayout.style.color = "#1f2937";
+
+      const grid = document.createElement("div");
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "1fr 1fr";
+      grid.style.gap = "16px";
+      pdfLayout.appendChild(grid);
+
+      const left = document.createElement("div");
+      const right = document.createElement("div");
+      left.style.fontSize = "12px";
+      right.style.fontSize = "12px";
+      left.style.lineHeight = "1.4";
+      right.style.lineHeight = "1.4";
+      grid.appendChild(left);
+      grid.appendChild(right);
+
+      const nodes = Array.from(reportEl.children);
+      const splitIndex = nodes.findIndex((node) => node.tagName === "H2" && node.textContent.includes("３．HPLiteの場合"));
+      const leftNodes = splitIndex >= 0 ? nodes.slice(0, splitIndex) : nodes;
+      const rightNodes = splitIndex >= 0 ? nodes.slice(splitIndex) : [];
+
+      for (const node of leftNodes) left.appendChild(node.cloneNode(true));
+      for (const node of rightNodes) right.appendChild(node.cloneNode(true));
+
+      document.body.appendChild(pdfLayout);
+      const canvas = await html2canvas(pdfLayout, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff"
+      });
+      pdfLayout.remove();
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = pageHeight - margin * 2;
+      const ratio = Math.min(contentWidth / canvas.width, contentHeight / canvas.height);
+      const drawWidth = canvas.width * ratio;
+      const drawHeight = canvas.height * ratio;
+      const x = (pageWidth - drawWidth) / 2;
+      const y = (pageHeight - drawHeight) / 2;
+      const imgData = canvas.toDataURL("image/png");
+      pdf.addImage(imgData, "PNG", x, y, drawWidth, drawHeight);
+      pdf.save(`${d.domain.replace(/[^\w.-]/g, "_")}_HPLite_Report.pdf`);
+    }
+
+    async function generate() {
+      const domain = document.getElementById("domain").value.trim();
+      if (!domain) {
+        alert("ここにドメインを書いてください");
+        return null;
+      }
+      const btnGenerate = document.getElementById("btnGenerate");
+      const genProgress = document.getElementById("genProgress");
+      const analyzingText = document.getElementById("analyzingText");
+      const btnNewReport = document.getElementById("btnNewReport");
+      current = null;
+      section2Cache = null;
+      optionAnalysisCache = null;
+      document.getElementById("report").innerHTML = "";
+      document.getElementById("btnPdf").classList.add("hidden");
+      btnNewReport.classList.add("hidden");
+      btnGenerate.classList.add("hidden");
+      genProgress.classList.remove("hidden");
+      analyzingText.classList.remove("hidden");
+      let success = false;
+      try {
+        const analysis = await analyzeSite(domain);
+        section2Cache = analysis;
+        optionAnalysisCache = analysis;
+        const d = calc(domain, analysis);
+        render(d);
+        document.getElementById("btnPdf").classList.remove("hidden");
+        btnNewReport.classList.remove("hidden");
+        success = true;
+        return d;
+      } finally {
+        genProgress.classList.add("hidden");
+        analyzingText.classList.add("hidden");
+        if (!success) btnGenerate.classList.remove("hidden");
+      }
+    }
+
+    let current = null;
+    loadSourceText();
+    document.getElementById("btnGenerate").addEventListener("click", async () => { current = await generate(); });
+    document.getElementById("btnPdf").addEventListener("click", async () => {
+      if (!current) current = await generate();
+      if (current) await toPdf(current);
+    });
+    document.getElementById("btnNewReport").addEventListener("click", () => window.location.reload());
+  </script>
+</body>
+</html>

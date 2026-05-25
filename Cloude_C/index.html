@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HPLite概算見積りアプリ</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --line: #dce3ed;
+      --text: #1f2a37;
+      --muted: #5f6b7a;
+      --primary: #1166cc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic", "Meiryo", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.65;
+    }
+    .container {
+      max-width: 980px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2, h3 { margin: 0 0 12px; line-height: 1.4; }
+    p { margin: 0 0 8px; }
+    .sub { color: var(--muted); margin-bottom: 12px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 180px auto;
+      gap: 10px;
+      align-items: end;
+    }
+    label { display: block; font-weight: 700; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #b9c6d8;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-ghost { background: #ecf2fc; color: #123c7a; }
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      overflow: auto;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .quote { color: #1f3554; background: #eef5ff; border-left: 4px solid #5d9bff; padding: 8px 10px; border-radius: 6px; }
+    .money { font-size: 22px; font-weight: 800; color: #11468a; }
+    ul { margin: 8px 0 0; padding-left: 20px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>HPLite 概算見積りレポート生成</h1>
+      <p class="sub">ドメイン入力から、サイト構成・見積り・PDFレポートをまとめて出力します。</p>
+      <div class="grid">
+        <div>
+          <label for="domain">対象ドメイン</label>
+          <input id="domain" type="text" value="kaiteki-rentalcar.jp" placeholder="example.com">
+        </div>
+        <div>
+          <label for="issueDate">発行日</label>
+          <input id="issueDate" type="date">
+        </div>
+        <div class="actions">
+          <button id="btnGenerate" class="btn-primary">レポート生成</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="report" class="card"></section>
+
+    <section class="card">
+      <div class="actions">
+        <button id="btnPdf" class="btn-primary">PDFレポート</button>
+        <button id="btnPrint" class="btn-ghost">印刷プレビュー</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script>
+    const PRICING = {
+      monthlyBase: 8800,
+      yearlyBase: 96800,
+      buildOptions: {
+        slideshow: 11000,
+        logo: 22000,
+        banner: 3300,
+        photoFix: 3300
+      },
+      rentalOptions: {
+        pageExtra: 1100,
+        form: 1100,
+        sns: 550,
+        backup: 1100,
+        emailExtra: 110
+      }
+    };
+
+    function yen(value) {
+      return "¥" + Number(value).toLocaleString("ja-JP");
+    }
+
+    function todayYmd() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function toSlashDate(isoDate) {
+      return isoDate.replaceAll("-", "/");
+    }
+
+    function buildData(domain, issueDate) {
+      const pagesTotal = 12;
+      const pagesExtra = Math.max(0, pagesTotal - 5);
+      const buildTotal = PRICING.buildOptions.slideshow
+        + PRICING.buildOptions.logo
+        + (PRICING.buildOptions.banner * 4)
+        + (PRICING.buildOptions.photoFix * 15);
+
+      const monthlyRental = (PRICING.rentalOptions.pageExtra * pagesExtra)
+        + (PRICING.rentalOptions.form * 2)
+        + PRICING.rentalOptions.sns
+        + PRICING.rentalOptions.backup
+        + (PRICING.rentalOptions.emailExtra * 2);
+
+      const firstPayment = (PRICING.monthlyBase * 2) + buildTotal + (monthlyRental * 2);
+      const monthlyPayment = PRICING.monthlyBase + monthlyRental;
+      const annualPayment = (PRICING.monthlyBase * 9) + (monthlyRental * 9);
+
+      const mermaid = `graph TD
+  A[ホーム] --> B[車種一覧]
+  A --> C[ご利用方法]
+  A --> D[貸渡約款]
+  A --> E[ご利用規約・細則]
+  A --> F[個人情報の取扱い]
+  A --> G[よくあるご質問]
+  A --> H[会社情報]
+  A --> I[お問い合わせ]
+  A --> J[ご予約はこちら]
+  A --> K[LINEコンシェルジュ]
+  B --> B1[ハイエース系]
+  B --> B2[アルファード系]
+  B --> B3[ミニバン/コンパクト/SUV/軽]
+  B --> B4[電動キックボード/キャンピングカー]`;
+
+      return {
+        domain,
+        issueDate,
+        issueDateSlash: toSlashDate(issueDate),
+        title: `${domain}HPLite概算見積り`,
+        company: "株式会社LinkNet",
+        industry: "レンタカー業",
+        marketPrice: 1500000,
+        pagesTotal,
+        pagesExtra,
+        buildTotal,
+        monthlyRental,
+        firstPayment,
+        monthlyPayment,
+        annualPayment,
+        mermaid
+      };
+    }
+
+    function renderReport(data) {
+      const el = document.getElementById("report");
+      el.innerHTML = `
+        <h2>表紙</h2>
+        <p><strong>タイトル:</strong> ${data.title}</p>
+        <p><strong>発行日:</strong> ${data.issueDateSlash}</p>
+        <p><strong>会社名:</strong> ${data.company}</p>
+        <hr>
+
+        <h2>1. Webサイト構成分析レポート</h2>
+        <h3>1.1 サイト概要</h3>
+        <p>対象ドメイン「${data.domain}」は、${data.industry}向けサイトとして判定。</p>
+        <h3>1.2 サイト構成図（Site Map）</h3>
+        <pre>${data.mermaid}</pre>
+
+        <h2>2. お見積りシミュレーション</h2>
+        <p><strong>業界相場費用:</strong> <span class="money">${yen(data.marketPrice)}</span></p>
+        <div class="quote">レンタカー業の中規模Web制作（予約導線あり）を想定した相場レンジ中央値</div>
+        <h3>Pattern A：月額プラン</h3>
+        <ul>
+          <li>初回お支払い額: <strong>${yen(data.firstPayment)}</strong>（基本料2ヶ月 + 制作オプション + レンタルオプション2ヶ月）</li>
+          <li>月額費用: <strong>${yen(data.monthlyPayment)} / 月</strong></li>
+        </ul>
+        <h3>Pattern B：年額一括プラン</h3>
+        <ul>
+          <li>初回お支払い額: <strong>${yen(data.firstPayment)}</strong>（基本料2ヶ月 + 制作オプション + レンタルオプション2ヶ月）</li>
+          <li>年額費用: <strong>${yen(data.annualPayment)} / 年</strong>（基本料9ヶ月 + レンタルオプション9ヶ月）</li>
+        </ul>
+
+        <h2>3. 補足・前提条件</h2>
+        <ul>
+          <li>算定ページ数: ${data.pagesTotal}ページ（追加 ${data.pagesExtra}ページ）</li>
+          <li>制作オプション合計: ${yen(data.buildTotal)}</li>
+          <li>レンタルオプション合計: ${yen(data.monthlyRental)} / 月</li>
+          <li>あくまでもAIによる概算見積りになります</li>
+        </ul>
+      `;
+    }
+
+    function buildPdfText(data) {
+      return [
+        data.title,
+        `発行日: ${data.issueDateSlash}`,
+        `会社名: ${data.company}`,
+        "",
+        "1. Webサイト構成分析レポート",
+        "1.1 サイト概要",
+        `- 対象ドメイン: ${data.domain}`,
+        `- 業種判定: ${data.industry}`,
+        "",
+        "1.2 サイト構成図（Mermaid）",
+        data.mermaid,
+        "",
+        "2. お見積りシミュレーション",
+        `業界相場費用: ${yen(data.marketPrice)}`,
+        `Pattern A 初回: ${yen(data.firstPayment)}`,
+        `Pattern A 月額: ${yen(data.monthlyPayment)} / 月`,
+        `Pattern B 初回: ${yen(data.firstPayment)}`,
+        `Pattern B 年額: ${yen(data.annualPayment)} / 年`,
+        "",
+        "3. 補足・前提条件",
+        `- 算定ページ数: ${data.pagesTotal}ページ（追加${data.pagesExtra}ページ）`,
+        `- 制作オプション: ${yen(data.buildTotal)}`,
+        `- レンタルオプション: ${yen(data.monthlyRental)} / 月`,
+        "- あくまでもAIによる概算見積りになります"
+      ].join("\n");
+    }
+
+    function downloadPdf(data) {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(11);
+
+      const lines = pdf.splitTextToSize(buildPdfText(data), 180);
+      let y = 20;
+      lines.forEach((line) => {
+        if (y > 280) {
+          pdf.addPage();
+          y = 20;
+        }
+        pdf.text(line, 15, y);
+        y += 6;
+      });
+
+      const filename = `${data.domain.replace(/[^\w.-]/g, "_")}_HPLite_Report.pdf`;
+      pdf.save(filename);
+    }
+
+    function generate() {
+      const domain = document.getElementById("domain").value.trim();
+      const issueDate = document.getElementById("issueDate").value;
+      if (!domain) {
+        alert("ドメインを入力してください。");
+        return null;
+      }
+      if (!issueDate) {
+        alert("発行日を入力してください。");
+        return null;
+      }
+      const data = buildData(domain, issueDate);
+      renderReport(data);
+      return data;
+    }
+
+    document.getElementById("issueDate").value = todayYmd();
+    let currentData = generate();
+
+    document.getElementById("btnGenerate").addEventListener("click", () => {
+      currentData = generate();
+    });
+
+    document.getElementById("btnPdf").addEventListener("click", () => {
+      if (!currentData) currentData = generate();
+      if (currentData) downloadPdf(currentData);
+    });
+
+    document.getElementById("btnPrint").addEventListener("click", () => {
+      window.print();
+    });
+  </script>
+</body>
+</html>
