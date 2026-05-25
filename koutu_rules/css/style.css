@@ -49,30 +49,67 @@ body {
 }
 .lang-switcher {
 	position: absolute;
-	top: 0;
-	right: 0;
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	background: rgba(255, 255, 255, .88);
+	top: 8px;
+	right: 8px;
+	z-index: 100;
+}
+.lang-btn {
+	background: rgba(255, 255, 255, .92);
 	border: 1px solid #FFD9CC;
 	border-radius: 999px;
-	padding: 4px 8px;
+	padding: 5px 10px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	box-shadow: 0 1px 4px rgba(0,0,0,.08);
+	transition: background .15s;
 }
-.lang-switcher label {
-	font-size: .75rem;
-	font-weight: 700;
+.lang-btn:hover,
+.lang-btn:focus { background: #FFF3E0; outline: none; }
+.lang-btn .arrow {
+	font-size: .55rem;
 	color: #6D4C41;
+	line-height: 1;
 }
-.lang-switcher select {
-	border: 1px solid #FFCCBC;
+.flag-img {
+	width: 22px;
+	height: 16px;
+	object-fit: cover;
+	border-radius: 2px;
+	display: block;
+}
+.lang-dropdown {
+	display: none;
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0;
 	background: #fff;
-	color: #37474F;
-	border-radius: 999px;
-	font-size: .75rem;
-	padding: 3px 8px;
-	max-width: 180px;
+	border: 1px solid #FFD9CC;
+	border-radius: 10px;
+	box-shadow: 0 4px 16px rgba(0,0,0,.14);
+	list-style: none;
+	margin: 0;
+	padding: 4px 0;
+	min-width: 168px;
+	z-index: 200;
 }
+.lang-dropdown.open { display: block; }
+.lang-dropdown li button {
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: none;
+	padding: 7px 14px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: .82rem;
+	color: #37474F;
+	white-space: nowrap;
+}
+.lang-dropdown li button:hover { background: #FFF3E0; }
 .app-header .logo-icon {
 	font-size: 3rem;
 	display: block;
@@ -781,8 +818,8 @@ aside {
 @media (max-width: 360px) {
 	.lang-switcher {
 		position: static;
-		justify-content: center;
-		margin: 0 auto 8px;
+		margin: 0 0 8px auto;
+		width: fit-content;
 	}
 	.app-header h1 {
 		font-size: 1.2rem;

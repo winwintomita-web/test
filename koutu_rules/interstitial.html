@@ -23,19 +23,30 @@
 	<!-- ヘッダー -->
 	<header class="app-header">
 		<div class="lang-switcher">
-			<label for="lang-select" id="lang-label">Languages</label>
-			<select id="lang-select" aria-label="Languages">
-				<option value="ja">🇯🇵 日本語</option>
-				<option value="en">🇺🇸 English</option>
-				<option value="zh">🇨🇳 中文（普通话）</option>
-				<option value="ko">🇰🇷 한국어</option>
-				<option value="vi">🇻🇳 Tiếng Việt</option>
-				<option value="tl">🇵🇭 Filipino</option>
-				<option value="id">🇮🇩 Bahasa Indonesia</option>
-				<option value="my">🇲🇲 မြန်မာဘာသာ</option>
-				<option value="pt">🇵🇹 Português</option>
-				<option value="fr">🇫🇷 Français</option>
-				<option value="it">🇮🇹 Italiano</option>
+			<button type="button" class="lang-btn" id="lang-btn"
+			        aria-haspopup="listbox" aria-expanded="false">
+				<img id="lang-flag-img" class="flag-img" src="" alt="" width="22" height="16">
+				<span class="arrow">▼</span>
+			</button>
+			<ul class="lang-dropdown" id="lang-dropdown" role="listbox">
+				<li><button type="button" data-lang="ja"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1ef-1f1f5.svg" alt="🇯🇵" class="flag-img"> 日本語</button></li>
+				<li><button type="button" data-lang="en"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1fa-1f1f8.svg" alt="🇺🇸" class="flag-img"> English</button></li>
+				<li><button type="button" data-lang="zh"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1e8-1f1f3.svg" alt="🇨🇳" class="flag-img"> 中文</button></li>
+				<li><button type="button" data-lang="ko"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f0-1f1f7.svg" alt="🇰🇷" class="flag-img"> 한국어</button></li>
+				<li><button type="button" data-lang="vi"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1fb-1f1f3.svg" alt="🇻🇳" class="flag-img"> Tiếng Việt</button></li>
+				<li><button type="button" data-lang="tl"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f5-1f1ed.svg" alt="🇵🇭" class="flag-img"> Filipino</button></li>
+				<li><button type="button" data-lang="id"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1ee-1f1e9.svg" alt="🇮🇩" class="flag-img"> Indonesia</button></li>
+				<li><button type="button" data-lang="my"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f2-1f1f2.svg" alt="🇲🇲" class="flag-img"> မြန်မာ</button></li>
+				<li><button type="button" data-lang="pt"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f5-1f1f9.svg" alt="🇵🇹" class="flag-img"> Português</button></li>
+				<li><button type="button" data-lang="fr"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1eb-1f1f7.svg" alt="🇫🇷" class="flag-img"> Français</button></li>
+				<li><button type="button" data-lang="it"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1ee-1f1f9.svg" alt="🇮🇹" class="flag-img"> Italiano</button></li>
+			</ul>
+			<!-- 既存 JS との互換性用（非表示） -->
+			<select id="lang-select" aria-hidden="true" style="display:none">
+				<option value="ja">ja</option><option value="en">en</option><option value="zh">zh</option>
+				<option value="ko">ko</option><option value="vi">vi</option><option value="tl">tl</option>
+				<option value="id">id</option><option value="my">my</option><option value="pt">pt</option>
+				<option value="fr">fr</option><option value="it">it</option>
 			</select>
 		</div>
 		<span class="logo-icon">🚨</span>
@@ -133,6 +144,47 @@
 function goResult() {
   window.location.href = 'result.html';
 }
+</script>
+<script>
+(function () {
+  const TW = 'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/';
+  const FLAGS = {
+    ja:'1f1ef-1f1f5', en:'1f1fa-1f1f8', zh:'1f1e8-1f1f3',
+    ko:'1f1f0-1f1f7', vi:'1f1fb-1f1f3', tl:'1f1f5-1f1ed',
+    id:'1f1ee-1f1e9', my:'1f1f2-1f1f2', pt:'1f1f5-1f1f9',
+    fr:'1f1eb-1f1f7', it:'1f1ee-1f1f9'
+  };
+  const btn      = document.getElementById('lang-btn');
+  const dropdown = document.getElementById('lang-dropdown');
+  const flagImg  = document.getElementById('lang-flag-img');
+  const sel      = document.getElementById('lang-select');
+  if (!btn) return;
+  function setFlag(lang) {
+    flagImg.src = TW + (FLAGS[lang] || FLAGS.ja) + '.svg';
+    flagImg.alt = lang;
+  }
+  setFlag(localStorage.getItem('bicycleRulesQuizLang') || 'ja');
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    const open = dropdown.classList.toggle('open');
+    btn.setAttribute('aria-expanded', String(open));
+  });
+  dropdown.querySelectorAll('[data-lang]').forEach(function (lb) {
+    lb.addEventListener('click', function () {
+      const lang = lb.dataset.lang;
+      setFlag(lang);
+      dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      localStorage.setItem('bicycleRulesQuizLang', lang);
+      sel.value = lang;
+      sel.dispatchEvent(new Event('change'));
+    });
+  });
+  document.addEventListener('click', function () {
+    dropdown.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  });
+})();
 </script>
 </body>
 </html>
