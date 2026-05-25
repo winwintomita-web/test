@@ -773,8 +773,7 @@ const QUIZ_DATA = [
     },
     fineAmount: '5,000',
     criminal: false
-  }
-
+  },
 
   /* ===== Q11: 逆走・右側通行（車道右側） ===== */
   {
