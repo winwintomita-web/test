@@ -72,12 +72,13 @@ body {
 	color: #6D4C41;
 	line-height: 1;
 }
-.flag-img {
+.lang-switcher .fi {
 	width: 22px;
 	height: 16px;
-	object-fit: cover;
 	border-radius: 2px;
-	display: block;
+	flex-shrink: 0;
+	background-size: cover;
+	display: inline-block;
 }
 .lang-dropdown {
 	display: none;

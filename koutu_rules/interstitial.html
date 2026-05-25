@@ -16,6 +16,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>結果を計算中… | 自転車 違反行為クイズ</title>
 <link rel="stylesheet" href="css/style.css?v04">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 </head>
 <body>
 <div class="app-wrapper"> 
@@ -25,21 +26,21 @@
 		<div class="lang-switcher">
 			<button type="button" class="lang-btn" id="lang-btn"
 			        aria-haspopup="listbox" aria-expanded="false">
-				<img id="lang-flag-img" class="flag-img" src="" alt="" width="22" height="16">
+				<span id="lang-flag-img" class="fi fi-jp"></span>
 				<span class="arrow">▼</span>
 			</button>
 			<ul class="lang-dropdown" id="lang-dropdown" role="listbox">
-				<li><button type="button" data-lang="ja"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1ef-1f1f5.svg" alt="🇯🇵" class="flag-img"> 日本語</button></li>
-				<li><button type="button" data-lang="en"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1fa-1f1f8.svg" alt="🇺🇸" class="flag-img"> English</button></li>
-				<li><button type="button" data-lang="zh"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1e8-1f1f3.svg" alt="🇨🇳" class="flag-img"> 中文</button></li>
-				<li><button type="button" data-lang="ko"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f0-1f1f7.svg" alt="🇰🇷" class="flag-img"> 한국어</button></li>
-				<li><button type="button" data-lang="vi"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1fb-1f1f3.svg" alt="🇻🇳" class="flag-img"> Tiếng Việt</button></li>
-				<li><button type="button" data-lang="tl"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f5-1f1ed.svg" alt="🇵🇭" class="flag-img"> Filipino</button></li>
-				<li><button type="button" data-lang="id"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1ee-1f1e9.svg" alt="🇮🇩" class="flag-img"> Indonesia</button></li>
-				<li><button type="button" data-lang="my"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f2-1f1f2.svg" alt="🇲🇲" class="flag-img"> မြန်မာ</button></li>
-				<li><button type="button" data-lang="pt"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1f5-1f1f9.svg" alt="🇵🇹" class="flag-img"> Português</button></li>
-				<li><button type="button" data-lang="fr"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1eb-1f1f7.svg" alt="🇫🇷" class="flag-img"> Français</button></li>
-				<li><button type="button" data-lang="it"><img src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/1f1ee-1f1f9.svg" alt="🇮🇹" class="flag-img"> Italiano</button></li>
+				<li><button type="button" data-lang="ja"><span class="fi fi-jp"></span> 日本語</button></li>
+				<li><button type="button" data-lang="en"><span class="fi fi-us"></span> English</button></li>
+				<li><button type="button" data-lang="zh"><span class="fi fi-cn"></span> 中文</button></li>
+				<li><button type="button" data-lang="ko"><span class="fi fi-kr"></span> 한국어</button></li>
+				<li><button type="button" data-lang="vi"><span class="fi fi-vn"></span> Tiếng Việt</button></li>
+				<li><button type="button" data-lang="tl"><span class="fi fi-ph"></span> Filipino</button></li>
+				<li><button type="button" data-lang="id"><span class="fi fi-id"></span> Indonesia</button></li>
+				<li><button type="button" data-lang="my"><span class="fi fi-mm"></span> မြန်မာ</button></li>
+				<li><button type="button" data-lang="pt"><span class="fi fi-pt"></span> Português</button></li>
+				<li><button type="button" data-lang="fr"><span class="fi fi-fr"></span> Français</button></li>
+				<li><button type="button" data-lang="it"><span class="fi fi-it"></span> Italiano</button></li>
 			</ul>
 			<!-- 既存 JS との互換性用（非表示） -->
 			<select id="lang-select" aria-hidden="true" style="display:none">
@@ -147,21 +148,17 @@ function goResult() {
 </script>
 <script>
 (function () {
-  const TW = 'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/assets/svg/';
-  const FLAGS = {
-    ja:'1f1ef-1f1f5', en:'1f1fa-1f1f8', zh:'1f1e8-1f1f3',
-    ko:'1f1f0-1f1f7', vi:'1f1fb-1f1f3', tl:'1f1f5-1f1ed',
-    id:'1f1ee-1f1e9', my:'1f1f2-1f1f2', pt:'1f1f5-1f1f9',
-    fr:'1f1eb-1f1f7', it:'1f1ee-1f1f9'
+  const CC = {
+    ja:'jp', en:'us', zh:'cn', ko:'kr', vi:'vn',
+    tl:'ph', id:'id', my:'mm', pt:'pt', fr:'fr', it:'it'
   };
   const btn      = document.getElementById('lang-btn');
   const dropdown = document.getElementById('lang-dropdown');
-  const flagImg  = document.getElementById('lang-flag-img');
+  const flagSpan = document.getElementById('lang-flag-img');
   const sel      = document.getElementById('lang-select');
   if (!btn) return;
   function setFlag(lang) {
-    flagImg.src = TW + (FLAGS[lang] || FLAGS.ja) + '.svg';
-    flagImg.alt = lang;
+    flagSpan.className = 'fi fi-' + (CC[lang] || 'jp');
   }
   setFlag(localStorage.getItem('bicycleRulesQuizLang') || 'ja');
   btn.addEventListener('click', function (e) {
