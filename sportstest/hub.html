@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>スタッフハブ｜からだ年齢 AIドック</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary:      #1e40af;
+      --primary-dark: #1e3a8a;
+      --accent:       #10b981;
+      --danger:       #ef4444;
+      --warn:         #f59e0b;
+      --bg:           #f1f5f9;
+      --card:         #ffffff;
+      --text:         #1e293b;
+      --sub:          #64748b;
+      --border:       #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+
+    /* ===== ヘッダー ===== */
+    header {
+      background: linear-gradient(135deg, #1e3a8a, #1e40af);
+      color: white;
+      padding: 16px 20px 20px;
+    }
+    .header-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .header-top h1 { font-size: 1rem; font-weight: 700; }
+    .header-top .clock { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* ステータスバー */
+    .status-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .status-chip {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 0.78rem;
+    }
+    .status-chip .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .dot-green  { background: #34d399; }
+    .dot-yellow { background: #fbbf24; }
+    .dot-red    { background: #f87171; }
+    .dot-gray   { background: rgba(255,255,255,0.4); }
+
+    /* ===== 今日の数字 ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px 16px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .stat-card .num {
+      font-size: 2.2rem; font-weight: 900; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .lbl { font-size: 0.72rem; color: var(--sub); }
+    .stat-card.registered .num { color: var(--primary); }
+    .stat-card.completed  .num { color: var(--accent); }
+    .stat-card.pending    .num { color: var(--warn); }
+
+    /* ===== ナビカード ===== */
+    .nav-section {
+      padding: 0 16px;
+    }
+    .section-label {
+      font-size: 0.75rem; font-weight: 700; color: var(--sub);
+      letter-spacing: 0.08em; margin: 14px 0 8px;
+    }
+    .nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .nav-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 18px 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text);
+      display: block;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .nav-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .nav-card:active { transform: translateY(0); }
+    .nav-card .nav-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+    .nav-card .nav-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+    .nav-card .nav-sub   { font-size: 0.72rem; color: var(--sub); line-height: 1.4; }
+    .nav-card .nav-badge {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 0.65rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 999px;
+    }
+
+    /* カラーアクセント */
+    .nav-card.blue   { border-top: 3px solid #0ea5e9; }
+    .nav-card.orange { border-top: 3px solid #f97316; }
+    .nav-card.purple { border-top: 3px solid #8b5cf6; }
+    .nav-card.green  { border-top: 3px solid #10b981; }
+    .nav-card.indigo { border-top: 3px solid #6366f1; }
+    .nav-card.gray   { border-top: 3px solid #94a3b8; }
+
+    .badge-blue   { background: #e0f2fe; color: #0369a1; }
+    .badge-orange { background: #fff7ed; color: #c2410c; }
+    .badge-purple { background: #f5f3ff; color: #6d28d9; }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-red    { background: #fee2e2; color: #b91c1c; }
+
+    /* 横幅フル */
+    .nav-card.full {
+      grid-column: span 2;
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px;
+    }
+    .nav-card.full .nav-icon { font-size: 1.6rem; margin-bottom: 0; flex-shrink: 0; }
+
+    /* ===== 設定サマリー ===== */
+    .settings-summary {
+      background: var(--card);
+      border-radius: 14px;
+      margin: 0 16px 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .settings-summary .row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .settings-summary .row:last-child { border-bottom: none; }
+    .settings-summary .row .key { color: var(--sub); font-size: 0.78rem; }
+    .settings-summary .row .val { font-weight: 700; }
+    .val-green  { color: #059669; }
+    .val-yellow { color: #d97706; }
+    .val-red    { color: #dc2626; }
+
+    /* ===== 受付QRコード ===== */
+    .qr-card {
+      background: var(--card);
+      border-radius: 14px;
+      margin: 0 16px 14px;
+      padding: 18px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .qr-card h3 { font-size: 0.88rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 4px; }
+    .qr-card p  { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; }
+    .qr-inner   { display: flex; gap: 16px; align-items: center; }
+    #reception-qr canvas { border-radius: 8px; }
+    .qr-url { font-size: 0.7rem; color: var(--sub); word-break: break-all; margin-top: 8px; }
+
+    /* ===== リフレッシュボタン ===== */
+    .refresh-row {
+      padding: 0 16px 24px;
+      text-align: center;
+    }
+    .refresh-btn {
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 999px; padding: 8px 20px;
+      font-size: 0.8rem; color: var(--sub); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ===== バックスイッチ警告バナー ===== */
+    #back-banner {
+      display: none;
+      background: #fef3c7; border-bottom: 2px solid #fbbf24;
+      padding: 10px 16px; font-size: 0.82rem;
+      font-weight: 700; color: #92400e; text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header>
+  <div class="header-top">
+    <div>
+      <h1 id="hub-title" style="cursor:default; user-select:none;">🏃 からだ年齢 AIドック</h1>
+      <div style="font-size:0.72rem; opacity:0.75; margin-top:3px;" id="today-date"></div>
+    </div>
+    <div class="clock" id="clock">00:00</div>
+  </div>
+</header>
+
+
+<!-- 設定サマリー（本日の会場のみ） -->
+<div class="settings-summary" id="settings-summary">
+  <div class="row">
+    <span class="key">🏟️ 本日の会場</span>
+    <span class="val" id="sum-venue">—</span>
+  </div>
+</div>
+
+<!-- ナビゲーション -->
+<div class="nav-section">
+  <div class="section-label">利用者向け画面</div>
+  <div class="nav-grid">
+    <a href="index.html" class="nav-card blue">
+      <span class="nav-badge badge-blue">利用者用</span>
+      <span class="nav-icon">📋</span>
+      <div class="nav-title">事前受付</div>
+      <div class="nav-sub">性別・生年月日・身長体重の入力&nbsp;QRコード発行</div>
+    </a>
+    <a href="result.html" class="nav-card green">
+      <span class="nav-badge badge-green">利用者用</span>
+      <span class="nav-icon">📊</span>
+      <div class="nav-title">結果レポート</div>
+      <div class="nav-sub">からだ年齢・5軸スコア・アドバイス表示</div>
+    </a>
+  </div>
+
+  <div class="section-label">測定ブース（カメラ端末）</div>
+  <div class="nav-grid">
+    <a href="booth-a.html" class="nav-card orange">
+      <span class="nav-badge badge-orange">ブースA</span>
+      <span class="nav-icon">🏃</span>
+      <div class="nav-title">ブースA</div>
+      <div class="nav-sub">反復横跳び測定タイマー&nbsp;QRスキャン→自動開始</div>
+    </a>
+    <a href="booth-b.html" class="nav-card purple">
+      <span class="nav-badge badge-purple">ブースB</span>
+      <span class="nav-icon">🧘</span>
+      <div class="nav-title">ブースB</div>
+      <div class="nav-sub">バランス・姿勢測定&nbsp;音声ガイド全自動進行</div>
+    </a>
+  </div>
+
+
+  <!-- 受付QRコード -->
+  <div class="section-label">受付URL（利用者に見せる）</div>
+  <div class="qr-card">
+    <h3>📲 スマホで読み取ると受付ページが開きます</h3>
+    <p>このQRコードを会場の入口や受付テーブルに掲示してください。</p>
+    <div class="qr-inner">
+      <div id="reception-qr"></div>
+      <div>
+        <div style="font-size:0.82rem; font-weight:700; margin-bottom:4px;">受付ページURL</div>
+        <div class="qr-url" id="reception-url"></div>
+        <button onclick="copyUrl()"
+          style="margin-top:8px; padding:6px 14px; border:1.5px solid var(--border); border-radius:8px; background:white; font-size:0.78rem; cursor:pointer; color:var(--primary); font-weight:600;">
+          📋 URLをコピー
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 動作確認フロー -->
+  <div class="section-label">本日の動作フロー確認</div>
+  <div style="background:white; border-radius:14px; padding:16px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,.06);">
+    <div style="display:flex; flex-direction:column; gap:0;">
+      <!-- ステップ -->
+      <div id="flow-steps"></div>
+    </div>
+  </div>
+
+</div><!-- /nav-section -->
+
+<div class="refresh-row">
+  <button class="refresh-btn" onclick="location.reload()">🔄 最新の状態に更新する</button>
+</div>
+
+<script>
+  // ===== 時計 =====
+  function updateClock() {
+    const now  = new Date();
+    const h    = String(now.getHours()).padStart(2,'0');
+    const m    = String(now.getMinutes()).padStart(2,'0');
+    const s    = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+
+    const wday = ['日','月','火','水','木','金','土'][now.getDay()];
+    document.getElementById('today-date').textContent =
+      `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${wday}）`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ===== 設定読み込み =====
+  const DEFAULT = {
+    pin:'1234', venues:[], selectedVenue:'', timeMode:'auto',
+    customFukuY:60, customKata:30, backSwitch:false
+  };
+  const cfg = { ...DEFAULT, ...JSON.parse(localStorage.getItem('aidock_settings') || '{}') };
+
+  // 設定サマリー（本日の会場のみ）
+  const venue = cfg.selectedVenue || '';
+  document.getElementById('sum-venue').textContent = venue || '（未設定）';
+  document.getElementById('sum-venue').className   = 'val ' + (venue ? 'val-green' : 'val-red');
+
+  // 管理者設定への隠しアクセス（タイトルを5回タップ）
+  let adminTaps = 0, adminTimer;
+  document.getElementById('hub-title').addEventListener('click', () => {
+    adminTaps++;
+    clearTimeout(adminTimer);
+    if (adminTaps >= 5) { location.href = 'admin.html'; return; }
+    adminTimer = setTimeout(() => { adminTaps = 0; }, 2000);
+  });
+
+  // ===== 本日の統計 =====
+  const records  = JSON.parse(localStorage.getItem('aidock_records') || '[]');
+  const todayStr = new Date().toLocaleDateString('ja-JP');
+  const todayRec = records.filter(r => {
+    const d = r.registeredAt ? new Date(r.registeredAt).toLocaleDateString('ja-JP') : '';
+    return d === todayStr;
+  });
+  const doneRec  = todayRec.filter(r => r.completedAt);
+  const pending  = todayRec.length - doneRec.length;
+
+  document.getElementById('cnt-reg').textContent  = todayRec.length;
+  document.getElementById('cnt-done').textContent = doneRec.length;
+  document.getElementById('cnt-pend').textContent = pending;
+
+  // ===== 動作フロー =====
+  const FLOW = [
+    { icon:'📋', label:'事前受付',   file:'index.html',   color:'#0ea5e9', desc:'QRコード発行まで' },
+    { icon:'🏃', label:'ブースA',    file:'booth-a.html', color:'#f97316', desc:'反復横跳び測定' },
+    { icon:'🧘', label:'ブースB',    file:'booth-b.html', color:'#8b5cf6', desc:'バランス・姿勢測定' },
+    { icon:'📊', label:'結果レポート',file:'result.html',  color:'#10b981', desc:'からだ年齢の表示' },
+  ];
+  document.getElementById('flow-steps').innerHTML = FLOW.map((s, i) => `
+    <div style="display:flex; align-items:center; gap:10px; padding:8px 0;
+      ${i < FLOW.length-1 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
+      <div style="width:34px;height:34px;border-radius:50%;
+        background:${s.color}22;display:flex;align-items:center;
+        justify-content:center;font-size:1.1rem;flex-shrink:0;">${s.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:0.85rem;font-weight:700;">${s.label}</div>
+        <div style="font-size:0.72rem;color:var(--sub);">${s.desc}</div>
+      </div>
+      <a href="${s.file}" style="font-size:0.75rem;font-weight:700;
+        color:${s.color};text-decoration:none;
+        background:${s.color}18;border-radius:8px;padding:5px 10px;">開く →</a>
+    </div>
+    ${i < FLOW.length-1 ? `<div style="margin-left:17px;color:#94a3b8;font-size:0.8rem;">↓</div>` : ''}
+  `).join('');
+
+  // ===== 受付QRコード生成 =====
+  const receptionUrl = location.href.replace('hub.html','index.html');
+  document.getElementById('reception-url').textContent = receptionUrl;
+  new QRCode(document.getElementById('reception-qr'), {
+    text: receptionUrl,
+    width: 120, height: 120,
+    colorDark: '#1e3a8a', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  function copyUrl() {
+    navigator.clipboard.writeText(receptionUrl)
+      .then(() => alert('URLをコピーしました！'))
+      .catch(() => alert(receptionUrl));
+  }
+</script>
+</body>
+</html>

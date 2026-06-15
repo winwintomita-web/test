@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>からだ年齢 AIドック｜導入案内</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: #dde3ec;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* A4 ページ */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      margin: 0 auto 24px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==============================
+       表面
+    ============================== */
+
+    /* ─ ヒーロー ─ */
+    .front-hero {
+      background: linear-gradient(150deg, #0f172a 0%, #1e3a8a 55%, #1d4ed8 100%);
+      color: white;
+      padding: 30px 32px 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    .front-hero::before {
+      content: '';
+      position: absolute; right: -60px; top: -60px;
+      width: 260px; height: 260px; border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    .front-hero::after {
+      content: '';
+      position: absolute; right: 30px; bottom: -80px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .hero-eyebrow {
+      font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em;
+      opacity: 0.6; margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .hero-title {
+      font-size: 32px; font-weight: 900; line-height: 1.15;
+      margin-bottom: 12px; letter-spacing: -0.02em;
+    }
+    .hero-title span { color: #60a5fa; }
+    .hero-copy {
+      font-size: 12px; line-height: 1.9; opacity: 0.85;
+      max-width: 310px; margin-bottom: 20px;
+    }
+    .hero-pills {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .hero-pill {
+      font-size: 9px; font-weight: 700;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px; padding: 5px 13px;
+    }
+
+    /* ─ フロー ─ */
+    .flow-wrap {
+      padding: 22px 28px 18px;
+    }
+    .sec-label {
+      font-size: 9px; font-weight: 900; letter-spacing: 0.14em;
+      color: #64748b; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sec-label::after {
+      content: ''; flex: 1; height: 1px; background: #e2e8f0;
+    }
+
+    .flow-cards {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 8px;
+    }
+    .flow-card {
+      border-radius: 14px; overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.09);
+      position: relative;
+    }
+    .flow-card-head {
+      padding: 11px 12px 10px;
+      color: white; position: relative;
+    }
+    .flow-num {
+      font-size: 8px; font-weight: 900; opacity: 0.75;
+      letter-spacing: 0.05em; margin-bottom: 2px;
+    }
+    .flow-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .flow-name { font-size: 11px; font-weight: 900; }
+    .flow-card-body {
+      background: white; padding: 10px 12px;
+    }
+    .flow-tag {
+      display: inline-block; font-size: 7.5px; font-weight: 700;
+      border-radius: 999px; padding: 2px 9px; margin-bottom: 6px;
+    }
+    .flow-detail { font-size: 8px; color: #64748b; line-height: 1.7; }
+
+    .flow-arrow {
+      display: flex; align-items: center; justify-content: center;
+      padding-top: 28px;
+      color: #cbd5e1; font-size: 18px; font-weight: 900;
+    }
+
+    /* ─ 結果プレビュー ─ */
+    .result-wrap {
+      padding: 0 28px 20px;
+    }
+    .result-box {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    /* からだ年齢サークル */
+    .age-circle {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(139,92,246,0.35);
+      flex-shrink: 0;
+    }
+    .age-circle .a-label { font-size: 8px; color: rgba(255,255,255,0.8); }
+    .age-circle .a-num   { font-size: 34px; font-weight: 900; color: white; line-height: 1; }
+    .age-circle .a-unit  { font-size: 10px; color: rgba(255,255,255,0.8); }
+
+    /* スコアバー */
+    .scores { display: flex; flex-direction: column; gap: 6px; }
+    .score-row { display: flex; align-items: center; gap: 8px; }
+    .score-lbl { font-size: 8.5px; color: #475569; width: 82px; flex-shrink: 0; }
+    .score-bar-wrap { flex: 1; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 999px; transition: width 0.8s ease; }
+    .score-pt { font-size: 9px; font-weight: 700; width: 30px; text-align: right; }
+
+    .result-caption {
+      margin-top: 10px; font-size: 8px; color: #94a3b8;
+      text-align: center;
+    }
+
+    /* ─ 表面フッター ─ */
+    .front-footer {
+      margin-top: auto;
+      background: #0f172a; color: white;
+      padding: 11px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 9px;
+    }
+    .front-footer .ff-brand { font-size: 11px; font-weight: 900; }
+    .front-footer .ff-note  { opacity: 0.5; font-size: 8px; }
+
+    /* ==============================
+       裏面
+    ============================== */
+    .back-header {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: white;
+      padding: 16px 28px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .bh-left { flex: 1; }
+    .bh-title { font-size: 14px; font-weight: 900; }
+    .bh-sub   { font-size: 8.5px; opacity: 0.7; margin-top: 3px; }
+    .bh-tag   {
+      font-size: 8px; font-weight: 700; letter-spacing: 0.1em;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px; padding: 4px 12px;
+    }
+
+    .back-body {
+      flex: 1;
+      padding: 18px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .bcard {
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+      overflow: hidden;
+    }
+    .bcard-head {
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding: 10px 16px;
+      font-size: 10px; font-weight: 900;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .bcard-body { padding: 14px 16px; }
+
+    /* 必要なもの */
+    .device-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .device-item {
+      background: #f8fafc; border-radius: 10px;
+      padding: 10px 12px; text-align: center;
+    }
+    .device-item .di-icon { font-size: 22px; margin-bottom: 5px; display: block; }
+    .device-item .di-name { font-size: 9.5px; font-weight: 700; margin-bottom: 3px; }
+    .device-item .di-note { font-size: 8px; color: #64748b; line-height: 1.6; }
+
+    .device-note {
+      margin-top: 10px; font-size: 8px; color: #94a3b8;
+      background: #f8fafc; border-radius: 8px; padding: 6px 10px;
+      line-height: 1.7;
+    }
+
+    /* メリット */
+    .merit-list { display: flex; flex-direction: column; gap: 9px; }
+    .merit-item {
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .merit-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .merit-title { font-size: 9.5px; font-weight: 900; margin-bottom: 2px; }
+    .merit-text  { font-size: 8.5px; color: #475569; line-height: 1.6; }
+
+    /* 当日の流れ */
+    .day-steps { display: flex; flex-direction: column; gap: 0; }
+    .day-step {
+      display: flex; gap: 10px; align-items: stretch;
+      position: relative;
+    }
+    .day-step-left {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .day-step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #1e40af; color: white;
+      font-size: 9px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .day-step-line {
+      width: 2px; flex: 1; background: #e2e8f0; margin: 3px auto;
+    }
+    .day-step:last-child .day-step-line { display: none; }
+    .day-step-right { padding: 0 0 12px; }
+    .day-step-title { font-size: 9.5px; font-weight: 900; margin-bottom: 2px; color: #1e293b; }
+    .day-step-desc  { font-size: 8.5px; color: #475569; line-height: 1.6; }
+
+    /* CTA */
+    .back-cta {
+      margin: 0 24px 18px;
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      border-radius: 14px; padding: 18px 24px;
+      color: white;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 16px; align-items: center;
+    }
+    .cta-title { font-size: 12px; font-weight: 900; margin-bottom: 5px; }
+    .cta-text  { font-size: 9px; opacity: 0.85; line-height: 1.7; }
+    .cta-contact { text-align: right; }
+    .cta-label { font-size: 8px; opacity: 0.7; margin-bottom: 3px; }
+    .cta-mail  { font-size: 10.5px; font-weight: 900; }
+
+    /* ===== 印刷 ===== */
+    @media print {
+      @page { size: A4; margin: 0; }
+      body { background: white; }
+      .page { margin: 0; width: 210mm; min-height: 297mm; page-break-after: always; }
+      .page:last-child { page-break-after: auto; }
+      .print-hint { display: none; }
+    }
+
+    .print-hint {
+      text-align: center; padding: 18px;
+      font-size: 12px; color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     表面
+============================================================ -->
+<div class="page">
+
+  <!-- ヒーロー -->
+  <div class="front-hero">
+    <div class="hero-eyebrow">Sports Health Check System</div>
+    <div class="hero-title">
+      3つの測定で<br>
+      <span>からだ年齢</span>がわかる。
+    </div>
+    <div class="hero-copy">
+      QRコードをかざすだけで自動スタート。<br>
+      反復横跳び・バランス・姿勢を計測し、<br>
+      あなたの「からだ年齢」をその場でレポート。
+    </div>
+    <div class="hero-pills">
+      <span class="hero-pill">📲 QRコードで簡単スタート</span>
+      <span class="hero-pill">🤖 音声ガイドで全自動進行</span>
+      <span class="hero-pill">📊 その場でレポート表示</span>
+      <span class="hero-pill">💾 データCSV出力対応</span>
+    </div>
+  </div>
+
+  <!-- 測定フロー -->
+  <div class="flow-wrap">
+    <div class="sec-label">測定の流れ</div>
+    <div class="flow-cards">
+
+      <div class="flow-card">
+        <div class="flow-card-head" style="background:linear-gradient(135deg,#0284c7,#0ea5e9);">
+          <div class="flow-num">STEP 01</div>
+          <span class="flow-icon">📋</span>
+          <div class="flow-name">受付</div>
+        </div>
+        <div class="flow-card-body">
+          <span class="flow-tag" style="background:#e0f2fe;color:#0369a1;">受付端末</span>
+          <div class="flow-detail">
+            性別・生年月日・<br>身長・体重を入力<br>→ QRコード発行
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-card-head" style="background:linear-gradient(135deg,#ea580c,#f97316);">
+          <div class="flow-num">STEP 02</div>
+          <span class="flow-icon">🏃</span>
+          <div class="flow-name">反復横跳び</div>
+        </div>
+        <div class="flow-card-body">
+          <span class="flow-tag" style="background:#fff7ed;color:#c2410c;">ブースA</span>
+          <div class="flow-detail">
+            QRをスキャンして<br>自動カウント開始<br>年齢別時間設定
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-card-head" style="background:linear-gradient(135deg,#7c3aed,#8b5cf6);">
+          <div class="flow-num">STEP 03</div>
+          <span class="flow-icon">🧘</span>
+          <div class="flow-name">バランス・姿勢</div>
+        </div>
+        <div class="flow-card-body">
+          <span class="flow-tag" style="background:#f5f3ff;color:#6d28d9;">ブースB</span>
+          <div class="flow-detail">
+            音声ガイドで<br>片足立ち＋姿勢写真<br>全自動で完結
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-card-head" style="background:linear-gradient(135deg,#059669,#10b981);">
+          <div class="flow-num">RESULT</div>
+          <span class="flow-icon">📊</span>
+          <div class="flow-name">結果レポート</div>
+        </div>
+        <div class="flow-card-body">
+          <span class="flow-tag" style="background:#dcfce7;color:#166534;">その場で表示</span>
+          <div class="flow-detail">
+            からだ年齢を表示<br>5軸スコア分析<br>アドバイスつき
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 結果レポートプレビュー -->
+  <div class="result-wrap">
+    <div class="sec-label">結果レポートのイメージ</div>
+    <div class="result-box">
+
+      <div>
+        <div class="age-circle">
+          <span class="a-label">からだ年齢</span>
+          <span class="a-num">38</span>
+          <span class="a-unit">歳</span>
+        </div>
+        <div style="text-align:center;margin-top:7px;font-size:8px;color:#059669;font-weight:700;">実年齢より2歳若い！</div>
+      </div>
+
+      <div class="scores">
+        <div style="font-size:8.5px;font-weight:700;color:#475569;margin-bottom:4px;">5軸スコア</div>
+        <div class="score-row">
+          <span class="score-lbl">体幹の安定度</span>
+          <div class="score-bar-wrap"><div class="score-bar" style="width:78%;background:#8b5cf6;"></div></div>
+          <span class="score-pt" style="color:#7c3aed;">78点</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">スピードとキレ</span>
+          <div class="score-bar-wrap"><div class="score-bar" style="width:65%;background:#f97316;"></div></div>
+          <span class="score-pt" style="color:#ea580c;">65点</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">重心コントロール</span>
+          <div class="score-bar-wrap"><div class="score-bar" style="width:70%;background:#10b981;"></div></div>
+          <span class="score-pt" style="color:#059669;">70点</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">左右バランス</span>
+          <div class="score-bar-wrap"><div class="score-bar" style="width:58%;background:#f59e0b;"></div></div>
+          <span class="score-pt" style="color:#d97706;">58点</span>
+        </div>
+        <div class="score-row">
+          <span class="score-lbl">あご上がり</span>
+          <div class="score-bar-wrap"><div class="score-bar" style="width:85%;background:#0ea5e9;"></div></div>
+          <span class="score-pt" style="color:#0284c7;">85点</span>
+        </div>
+        <div style="font-size:8px;color:#94a3b8;margin-top:6px;">※ AIがスコアに応じたアドバイスとおすすめ運動を自動表示</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 表面フッター -->
+  <div class="front-footer">
+    <div class="ff-brand">🏃 からだ年齢 AIドック</div>
+    <div class="ff-note">詳細は裏面をご覧ください →</div>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     裏面
+============================================================ -->
+<div class="page">
+
+  <div class="back-header">
+    <div class="bh-left">
+      <div class="bh-title">導入ガイド</div>
+      <div class="bh-sub">からだ年齢 AIドック — 運営・スタッフ向け資料</div>
+    </div>
+    <div class="bh-tag">OPERATION GUIDE</div>
+  </div>
+
+  <div class="back-body">
+
+    <!-- 必要な機材 -->
+    <div class="bcard">
+      <div class="bcard-head">📱 必要な機材</div>
+      <div class="bcard-body">
+        <div class="device-grid">
+          <div class="device-item">
+            <span class="di-icon">📋</span>
+            <div class="di-name">受付端末</div>
+            <div class="di-note">スマホ or タブレット<br>入力フォーム・QR発行</div>
+          </div>
+          <div class="device-item">
+            <span class="di-icon">⏱️</span>
+            <div class="di-name">ブースA端末</div>
+            <div class="di-note">カメラ付きスマホ or タブレット<br>QRスキャン・タイマー</div>
+          </div>
+          <div class="device-item">
+            <span class="di-icon">📷</span>
+            <div class="di-name">ブースB端末</div>
+            <div class="di-note">カメラ付きスマホ or タブレット<br>バランス計測・写真撮影</div>
+          </div>
+          <div class="device-item">
+            <span class="di-icon">📊</span>
+            <div class="di-name">結果表示端末</div>
+            <div class="di-note">スマホ or タブレット<br>レポート表示（兼用可）</div>
+          </div>
+        </div>
+        <div class="device-note">
+          💡 同一Wi-Fiネットワークに接続し、URLをブラウザで開くだけで即日利用開始。<br>
+          アプリのインストールは一切不要です。
+        </div>
+      </div>
+    </div>
+
+    <!-- 選ばれる理由 -->
+    <div class="bcard">
+      <div class="bcard-head">⭐ 選ばれる理由</div>
+      <div class="bcard-body">
+        <div class="merit-list">
+          <div class="merit-item">
+            <div class="merit-icon" style="background:#dbeafe;">⚡</div>
+            <div>
+              <div class="merit-title">準備ゼロで当日すぐ使える</div>
+              <div class="merit-text">ブラウザでURLを開くだけ。アプリインストールも設定作業も不要です。</div>
+            </div>
+          </div>
+          <div class="merit-item">
+            <div class="merit-icon" style="background:#dcfce7;">🤖</div>
+            <div>
+              <div class="merit-title">音声ガイドで全自動進行</div>
+              <div class="merit-text">ブースBは音声アナウンスがフローを誘導。利用者1人でも完結できます。</div>
+            </div>
+          </div>
+          <div class="merit-item">
+            <div class="merit-icon" style="background:#fef3c7;">🔒</div>
+            <div>
+              <div class="merit-title">個人情報は端末の外に出ない</div>
+              <div class="merit-text">すべてのデータは端末内にのみ保存。外部サーバーへの送信はゼロです。</div>
+            </div>
+          </div>
+          <div class="merit-item">
+            <div class="merit-icon" style="background:#f3e8ff;">📤</div>
+            <div>
+              <div class="merit-title">全データをCSVで一括出力</div>
+              <div class="merit-text">管理者画面から当日の全測定結果をCSV出力。報告書作成に即活用できます。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 当日の運営イメージ -->
+    <div class="bcard">
+      <div class="bcard-head">📅 当日の運営イメージ</div>
+      <div class="bcard-body">
+        <div class="day-steps">
+          <div class="day-step">
+            <div class="day-step-left">
+              <div class="day-step-num">1</div>
+              <div class="day-step-line"></div>
+            </div>
+            <div class="day-step-right">
+              <div class="day-step-title">開場30分前｜セットアップ</div>
+              <div class="day-step-desc">管理者設定で会場名を登録。各ブース端末でブラウザを開き、URLを入力するだけで完了。</div>
+            </div>
+          </div>
+          <div class="day-step">
+            <div class="day-step-left">
+              <div class="day-step-num">2</div>
+              <div class="day-step-line"></div>
+            </div>
+            <div class="day-step-right">
+              <div class="day-step-title">受付開始｜QRコード発行</div>
+              <div class="day-step-desc">利用者が情報を入力するとQRコードが自動発行。スタッフはブースへ誘導するだけ。</div>
+            </div>
+          </div>
+          <div class="day-step">
+            <div class="day-step-left">
+              <div class="day-step-num">3</div>
+              <div class="day-step-line"></div>
+            </div>
+            <div class="day-step-right">
+              <div class="day-step-title">測定中｜ほぼ自動で進む</div>
+              <div class="day-step-desc">QRをかざせばブースAが自動スタート。ブースBは音声ガイドが利用者を誘導。スタッフは見守るだけ。</div>
+            </div>
+          </div>
+          <div class="day-step">
+            <div class="day-step-left">
+              <div class="day-step-num">4</div>
+              <div class="day-step-line"></div>
+            </div>
+            <div class="day-step-right">
+              <div class="day-step-title">終了後｜データ回収</div>
+              <div class="day-step-desc">管理者設定から全員分のCSVを1クリックで出力。当日の測定データをそのまま活用できます。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- システム仕様 -->
+    <div class="bcard">
+      <div class="bcard-head">🔧 システム仕様</div>
+      <div class="bcard-body">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+
+          <div style="display:flex;gap:10px;padding:6px 10px;background:#f8fafc;border-radius:8px;font-size:9px;align-items:center;">
+            <span style="font-size:15px;">🌐</span>
+            <div>
+              <div style="font-weight:700;margin-bottom:1px;">ブラウザだけで動作</div>
+              <div style="color:#64748b;">Chrome・Safari・Edge（最新版）対応。インストール不要。</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;padding:6px 10px;background:#f8fafc;border-radius:8px;font-size:9px;align-items:center;">
+            <span style="font-size:15px;">🔗</span>
+            <div>
+              <div style="font-weight:700;margin-bottom:1px;">QRコードで自動データ連携</div>
+              <div style="color:#64748b;">受付情報がQRに圧縮されブース間でシームレスに引き継がれます。</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;padding:6px 10px;background:#f8fafc;border-radius:8px;font-size:9px;align-items:center;">
+            <span style="font-size:15px;">🎤</span>
+            <div>
+              <div style="font-weight:700;margin-bottom:1px;">音声ガイド自動アナウンス</div>
+              <div style="color:#64748b;">ブースBは日本語音声が全フローを自動案内。スタッフ配置を最小化。</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;padding:6px 10px;background:#f8fafc;border-radius:8px;font-size:9px;align-items:center;">
+            <span style="font-size:15px;">📸</span>
+            <div>
+              <div style="font-weight:700;margin-bottom:1px;">姿勢写真の自動撮影</div>
+              <div style="color:#64748b;">カウントダウン後にシャッター＋ストロボ。写真がレポートに添付されます。</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;padding:6px 10px;background:#f8fafc;border-radius:8px;font-size:9px;align-items:center;">
+            <span style="font-size:15px;">📑</span>
+            <div>
+              <div style="font-weight:700;margin-bottom:1px;">CSV一括出力（18項目）</div>
+              <div style="color:#64748b;">受付日時・会場名・スコア・からだ年齢など全データをExcel対応形式で出力。</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /back-body -->
+
+  <!-- CTA -->
+  <div class="back-cta">
+    <div>
+      <div class="cta-title">🏃 導入・デモのご相談はお気軽に</div>
+      <div class="cta-text">
+        スポーツイベント・体力測定会・健康経営など、さまざまな場面でご活用いただけます。<br>
+        まずはデモ画面をお見せしながらご説明します。お気軽にご連絡ください。
+      </div>
+    </div>
+    <div class="cta-contact">
+      <div class="cta-label">お問い合わせ</div>
+      <div class="cta-mail">winwintomita@gmail.com</div>
+    </div>
+  </div>
+
+</div><!-- /page-back -->
+
+<div class="print-hint">
+  <p>印刷するには <strong>Ctrl + P</strong>（Mac: ⌘ + P）を押してください。</p>
+  <p style="margin-top:5px;font-size:11px;color:#94a3b8;">用紙サイズ: A4 ／ 余白: なし ／「背景のグラフィック」をオンにしてください。</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<!--
+  【使い方】
+  このファイルの内容を EmailJS の「Email Templates > HTML」欄にコピー＆ペーストしてください。
+  テンプレート変数（{{xxx}}）はコードから自動で埋め込まれます。
+
+  設定するテンプレート変数：
+  - {{to_email}}  : 宛先メールアドレス
+  - {{uid}}       : 受付番号
+  - {{venue}}     : 会場名
+  - {{tier}}      : 年齢区分（現役世代 / 熟年層 / シニア層）
+  - {{age}}       : 年齢
+  - {{fukuy_sec}} : 反復横跳び測定時間（秒）
+  - {{kata_sec}}  : 片足立ち測定時間（秒）
+  - {{qr_image}}  : QRコード画像（Base64 dataURL）
+
+  To（宛先）欄には「{{to_email}}」を設定してください。
+  Subject（件名）欄は例：「【からだ年齢 AIドック】本日のQRコードをお届けします」
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: #f1f5f9;
+      margin: 0; padding: 20px;
+      color: #1e293b;
+    }
+    .wrapper {
+      max-width: 520px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: white;
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 20px;
+      margin: 0 0 6px;
+    }
+    .header p {
+      font-size: 13px;
+      opacity: 0.85;
+      margin: 0;
+    }
+    .body {
+      padding: 28px 24px;
+    }
+    .lead {
+      font-size: 15px;
+      line-height: 1.9;
+      margin-bottom: 24px;
+      color: #334155;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; }
+    .info-val   { font-weight: 700; color: #1e293b; }
+    .qr-section {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .qr-section .qr-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #0284c7;
+    }
+    .qr-section img {
+      width: 200px;
+      height: 200px;
+      border-radius: 8px;
+      border: 3px solid #e2e8f0;
+    }
+    .qr-section .qr-note {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 10px;
+      line-height: 1.7;
+    }
+    .steps-box {
+      background: #eff6ff;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .steps-box h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e40af;
+      margin: 0 0 12px;
+    }
+    .step-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .step-num {
+      width: 22px; height: 22px;
+      background: #1e40af;
+      color: white;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .warn-box {
+      background: #fef9c3;
+      border: 1px solid #fde047;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #713f12;
+      margin-bottom: 24px;
+    }
+    .footer {
+      background: #0f172a;
+      color: white;
+      padding: 16px 24px;
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <h1>🏃 からだ年齢 AIドック</h1>
+    <p>本日のQRコードをお届けします</p>
+  </div>
+
+  <div class="body">
+
+    <p class="lead">
+      このたびは「からだ年齢 AIドック」にお申し込みいただきありがとうございます。<br>
+      測定ブースで使うQRコードをお届けします。
+    </p>
+
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">受付番号</span>
+        <span class="info-val">{{uid}}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">会場</span>
+        <span class="info-val">{{venue}}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">年齢区分</span>
+        <span class="info-val">{{tier}}（{{age}}歳）</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">反復横跳び</span>
+        <span class="info-val">{{fukuy_sec}}秒</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">片足立ち（左右各）</span>
+        <span class="info-val">{{kata_sec}}秒</span>
+      </div>
+    </div>
+
+    <div class="qr-section">
+      <div class="qr-title">📲 測定ブースで提示するQRコード</div>
+      <img src="{{qr_image}}" alt="QRコード" />
+      <div class="qr-note">
+        ※ このQRコードはブースAとブースBで使用します。<br>
+        スクリーンショットして保存しておいてください。
+      </div>
+    </div>
+
+    <div class="warn-box">
+      📌 <strong>メールを確認後、測定ブースへお進みください。</strong><br>
+      QRコードが届いていない場合は、スタッフにお申し付けください。
+    </div>
+
+    <div class="steps-box">
+      <h3>📍 測定の流れ</h3>
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div><b>ブースA</b>：QRをかざして反復横跳びを測定します。</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div><b>ブースB</b>：QRをかざして片足立ち＋姿勢写真を撮影します。</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div>測定完了後、<b>からだ年齢レポート</b>が表示されます。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    からだ年齢 AIドック — 自動送信メールです。返信はご遠慮ください。
+  </div>
+
+</div>
+</body>
+</html>

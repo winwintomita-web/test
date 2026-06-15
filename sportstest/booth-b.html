@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>ブースB｜バランス・姿勢測定</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary:      #8b5cf6;
+      --primary-dark: #7c3aed;
+      --accent:       #10b981;
+      --danger:       #ef4444;
+      --warn:         #f59e0b;
+      --bg:           #f5f3ff;
+      --card:         #ffffff;
+      --text:         #1e293b;
+      --sub:          #64748b;
+      --border:       #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    header {
+      width: 100%;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+      padding: 12px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header p  { font-size: 0.7rem; opacity: 0.85; margin-top: 2px; }
+
+    /* ===== 共通カード ===== */
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border-radius: 16px;
+      margin: 14px 16px;
+      padding: 24px 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 8px; }
+    .card .sub { font-size: 0.8rem; color: var(--sub); margin-bottom: 18px; line-height: 1.6; }
+
+    /* ===== ボタン ===== */
+    .btn {
+      display: block; width: 100%;
+      padding: 15px; border: none; border-radius: 12px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 10px;
+    }
+    .btn:last-child { margin-bottom: 0; }
+    .btn-primary  { background: linear-gradient(135deg,#8b5cf6,#7c3aed); color:white; box-shadow:0 4px 12px rgba(139,92,246,.35); }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-secondary { background: var(--border); color: var(--sub); }
+    .btn-success   { background: linear-gradient(135deg,#10b981,#059669); color:white; }
+    .btn-danger    { background: linear-gradient(135deg,#ef4444,#dc2626); color:white; }
+
+    /* ===== 画面切り替え ===== */
+    .screen { display: none; width: 100%; max-width: 480px; }
+    .screen.active { display: flex; flex-direction: column; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ===== QRスキャン画面 ===== */
+    .or-divider {
+      text-align: center; font-size: 0.8rem; color: var(--sub);
+      margin: 14px 0; position: relative;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; position: absolute; top: 50%;
+      width: 42%; height: 1px; background: var(--border);
+    }
+    .or-divider::before { left: 0; }
+    .or-divider::after  { right: 0; }
+    textarea#manual-qr-b {
+      width: 100%; padding: 10px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 0.75rem; min-height: 64px;
+      resize: vertical; font-family: monospace;
+    }
+    .error-msg { display:none; color:#dc2626; font-size:0.8rem; margin-top:6px; }
+    #qr-reader-b { width: 100%; }
+    #qr-reader-b video { border-radius: 10px; }
+
+    /* ===== 測定ステータスバッジ ===== */
+    .status-row { display:flex; gap:10px; margin-bottom:14px; }
+    .status-chip {
+      flex:1; border-radius:12px; padding:12px 10px;
+      text-align:center; border:1.5px solid var(--border); background:#f8fafc;
+    }
+    .status-chip .chip-label { font-size:0.72rem; color:var(--sub); margin-bottom:4px; }
+    .status-chip .chip-val   { font-size:0.84rem; font-weight:700; }
+    .status-chip.done { background:#ecfdf5; border-color:#6ee7b7; }
+    .status-chip.done .chip-val { color:#065f46; }
+    .status-chip.next { background:#eff6ff; border-color:#93c5fd; }
+    .status-chip.next .chip-val { color:#1d4ed8; }
+    .status-chip.skip { background:#fafafa; border-color:#e2e8f0; }
+    .status-chip.skip .chip-val { color:#94a3b8; }
+
+    /* ===== ユーザー確認バッジ ===== */
+    .user-badge {
+      background: #eff6ff; border: 1.5px solid #bfdbfe;
+      border-radius: 12px; padding: 14px; margin-bottom: 14px;
+    }
+    .user-badge .row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.85rem; }
+    .user-badge .row span:last-child { font-weight: 700; }
+
+    /* ===== イントロ画面 ===== */
+    .prev-badge {
+      background: #fff7ed; border: 1.5px solid #fed7aa;
+      border-radius: 12px; padding: 14px; margin-bottom: 16px;
+    }
+    .prev-badge .title { font-weight:700; color:#ea580c; margin-bottom:6px; font-size:0.9rem; }
+    .prev-badge .row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.85rem; }
+    .prev-badge .row span:last-child { font-weight:700; }
+
+    /* ===== 測定メイン画面 ===== */
+    #screen-measure {
+      padding: 0;
+      gap: 0;
+    }
+
+    /* カメラエリア */
+    #camera-wrap {
+      position: relative;
+      width: 100%;
+      background: #1e293b;
+      overflow: hidden;
+      flex-shrink: 0;
+      max-height: 260px;
+    }
+    #cam-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    canvas { display: none; }
+
+    /* 検出オーバーレイ */
+    #detect-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: white;
+      background: rgba(30,41,59,0.65);
+    }
+    #detect-overlay.visible { display: flex; }
+    #detect-overlay.confirmed { background: rgba(5,150,105,0.7); }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .check-icon { font-size: 2.5rem; animation: popIn 0.3s ease; }
+    @keyframes popIn {
+      from { transform: scale(0); } to { transform: scale(1); }
+    }
+
+    /* 指示エリア */
+    #instruction-area {
+      padding: 16px 20px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #phase-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: white;
+      background: var(--primary);
+      border-radius: 999px;
+      padding: 4px 12px;
+      margin-bottom: 12px;
+      align-self: flex-start;
+    }
+
+    #instruction-text {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 14px;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+
+    /* カウントダウン数字 */
+    #cd-number {
+      font-size: 7rem;
+      font-weight: 900;
+      color: var(--primary);
+      line-height: 1;
+      text-align: center;
+      margin: 8px 0;
+      display: none;
+      animation: cdPulse 0.6s ease;
+    }
+    @keyframes cdPulse {
+      0%   { transform: scale(1.4); opacity:0; }
+      100% { transform: scale(1);   opacity:1; }
+    }
+
+    /* バランスタイマーリング */
+    #timer-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .timer-ring { position: relative; width: 180px; height: 180px; }
+    .timer-ring svg { transform: rotate(-90deg); }
+    .ring-bg { fill:none; stroke:#ede9fe; stroke-width:14; }
+    .ring-fg { fill:none; stroke:var(--primary); stroke-width:14;
+      stroke-linecap:round; transition: stroke-dashoffset 1s linear; }
+    .timer-center {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+    }
+    .timer-secs { font-size:3.2rem; font-weight:900; color:var(--primary-dark); line-height:1; }
+    .timer-unit { font-size:0.85rem; color:var(--sub); }
+    .foot-label { font-size:0.9rem; font-weight:700; color:var(--sub); }
+
+    /* フォトカウントダウン */
+    #photo-cd-num {
+      font-size: 7rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      display: none;
+      animation: cdPulse 0.6s ease;
+    }
+
+    /* 撮影写真プレビュー */
+    #captured-preview {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    /* ステータスライン */
+    #status-line {
+      font-size: 0.8rem;
+      color: var(--sub);
+      text-align: center;
+      min-height: 20px;
+      margin-top: 6px;
+    }
+
+    /* ボタンエリア */
+    #btn-area {
+      padding: 10px 20px 16px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #foot-down-btn {
+      display: none;
+      width: 100%; padding: 13px;
+      border: none; border-radius: 10px;
+      background: #fee2e2; color: #991b1b;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer;
+    }
+    #abort-btn {
+      width: 100%; padding: 10px;
+      border: none; border-radius: 10px;
+      background: #f1f5f9; color: var(--sub);
+      font-size: 0.82rem; cursor: pointer;
+    }
+
+    /* ===== 結果画面 ===== */
+    .total-box {
+      background: linear-gradient(135deg,#8b5cf6,#7c3aed);
+      color: white; border-radius: 14px; padding: 20px;
+      text-align: center; margin-bottom: 16px;
+    }
+    .total-box .lbl { font-size:0.85rem; opacity:0.85; }
+    .total-box .num { font-size:3.5rem; font-weight:900; line-height:1.1; }
+    .total-box .unit{ font-size:0.82rem; opacity:0.8; }
+
+    .result-section { background: #f8fafc; border-radius:12px; padding:14px; margin-bottom:12px; }
+    .result-section h3 { font-size:0.9rem; font-weight:700; margin-bottom:10px; }
+
+    .bal-row { display:flex; gap:10px; }
+    .bal-chip { flex:1; background:white; border-radius:10px; padding:12px; text-align:center; }
+    .bal-chip .ft  { font-size:0.72rem; color:var(--sub); margin-bottom:3px; }
+    .bal-chip .sec { font-size:2rem; font-weight:900; color:var(--primary-dark); line-height:1; }
+    .bal-chip .un  { font-size:0.72rem; color:var(--sub); }
+    .bal-chip .gr  { font-size:0.78rem; font-weight:700; margin-top:4px; }
+    .score-bar { height:7px; border-radius:999px; background:var(--border); margin:8px 0 3px; overflow:hidden; }
+    .score-fill{ height:100%; border-radius:999px;
+      background:linear-gradient(90deg,#8b5cf6,#7c3aed); transition:width 1s ease; }
+    .result-note { font-size:0.82rem; line-height:1.8; color:var(--text); }
+    .combined-box {
+      background:#fff7ed; border:1px solid #fed7aa;
+      border-radius:12px; padding:14px;
+      font-size:0.85rem; line-height:1.8; color:#7c2d12;
+      margin-bottom:18px;
+    }
+    #result-photo { width:100%; border-radius:10px; display:none; margin-top:8px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🧘 ブースB｜バランス・姿勢ドック</h1>
+  <p>疲労時バランス＆姿勢測定</p>
+</header>
+
+<!-- ===== 画面1：QRスキャン待機 ===== -->
+<div class="screen active fade-in" id="screen-start">
+  <div class="card">
+    <h2>📲 QRコードを読み込む</h2>
+    <p class="sub">受付で発行されたQRコードをカメラにかざしてください。<br>カメラが使えない場合はQRデータを直接貼り付けることもできます。</p>
+
+    <button class="btn btn-primary" onclick="startQrScan()">📷 カメラでQRスキャン</button>
+
+    <div class="or-divider">または</div>
+
+    <p style="font-size:0.8rem; color:var(--sub); margin-bottom:6px;">QRコードデータを貼り付け（テスト用）</p>
+    <textarea id="manual-qr-b" placeholder='{"id":"AID-XXX","em":"test@example.com","g":"M","age":35,"t":0,"fy":60,...}'></textarea>
+    <div class="error-msg" id="qr-error-b">⚠️ QRコードのデータが正しくありません。受付で発行されたQRコードを使用してください。</div>
+    <button class="btn btn-secondary" style="margin-top:10px;" onclick="parseManualQr()">このデータで進む</button>
+  </div>
+</div>
+
+<!-- ===== 画面2：QRリーダー ===== -->
+<div class="screen fade-in" id="screen-scan">
+  <div class="card">
+    <h2>📷 QRコードをかざしてください</h2>
+    <p class="sub">画面内の枠にQRコードが入るように向けてください。</p>
+    <div id="qr-reader-b"></div>
+    <button class="btn btn-secondary" style="margin-top:12px;" onclick="stopScan()">← キャンセル</button>
+  </div>
+</div>
+
+<!-- ===== 画面3：利用者確認・開始 ===== -->
+<div class="screen fade-in" id="screen-intro">
+  <div class="card">
+    <h2>✅ 利用者の確認</h2>
+    <p class="sub">内容を確認して「測定を開始する」を押してください。</p>
+
+    <div class="user-badge" id="ready-user-info"></div>
+
+    <div class="status-row">
+      <div class="status-chip" id="booth-a-chip">
+        <div class="chip-label">🏃 ブースA｜反復横跳び</div>
+        <div class="chip-val" id="booth-a-status">—</div>
+      </div>
+      <div class="status-chip next">
+        <div class="chip-label">🧘 ブースB｜バランス</div>
+        <div class="chip-val">これから測定</div>
+      </div>
+    </div>
+
+    <div style="background:#f5f3ff; border-radius:12px; padding:14px; font-size:0.82rem; line-height:1.9; color:#5b21b6; margin-bottom:20px;">
+      📍 <b>ブースBの自動進行フロー</b><br>
+      ① キャリブレーション（音声ガイドのみ・自動）<br>
+      ② 左足 30秒片足立ち<br>
+      ③ 右足 30秒片足立ち<br>
+      ④ 姿勢写真 自動撮影（3・2・1・カシャッ）
+    </div>
+
+    <button class="btn btn-primary" id="start-btn" onclick="startFlow()">▶ 測定を開始する（カメラ起動）</button>
+    <button class="btn btn-secondary" onclick="showScreen('screen-start')">← QR読み直す</button>
+  </div>
+</div>
+
+<!-- ===== 測定メイン画面 ===== -->
+<div class="screen" id="screen-measure">
+  <!-- カメラ -->
+  <div id="camera-wrap">
+    <video id="cam-video" autoplay playsinline muted></video>
+    <canvas id="cap-canvas"></canvas>
+    <div id="detect-overlay">
+      <div class="spinner" id="spinner"></div>
+      <span id="detect-text">AIが確認中...</span>
+    </div>
+  </div>
+
+  <!-- 指示エリア -->
+  <div id="instruction-area">
+    <div id="phase-badge">キャリブレーション</div>
+    <div id="instruction-text">準備中...</div>
+    <div id="cd-number">3</div>
+    <div id="timer-wrap">
+      <div class="timer-ring">
+        <svg viewBox="0 0 180 180" width="180" height="180">
+          <circle class="ring-bg" cx="90" cy="90" r="78"/>
+          <circle class="ring-fg" id="ring-fg" cx="90" cy="90" r="78"
+            stroke-dasharray="490" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-center">
+          <div class="timer-secs" id="timer-secs">30</div>
+          <div class="timer-unit">秒</div>
+        </div>
+      </div>
+      <div class="foot-label" id="foot-label">左足で立っています</div>
+    </div>
+    <div id="photo-cd-num">3</div>
+    <img id="captured-preview" alt="撮影写真" />
+    <div id="status-line"></div>
+  </div>
+
+  <!-- ボタンエリア -->
+  <div id="btn-area">
+    <button id="foot-down-btn" onclick="footDown()">⚠️ 足が下りました（スタッフ用）</button>
+    <button id="abort-btn" onclick="confirmAbort()">測定を中断する</button>
+  </div>
+</div>
+
+<!-- ===== 結果画面 ===== -->
+<div class="screen fade-in" id="screen-result">
+  <div class="card">
+    <h2>📊 ブースB 測定結果</h2>
+    <p class="sub" id="result-sub">バランス・姿勢ドックが完了しました。</p>
+
+    <div class="total-box">
+      <div class="lbl">ブースB 総合スコア</div>
+      <div class="num" id="total-num">—</div>
+      <div class="unit">点 / 100点</div>
+    </div>
+
+    <!-- バランス -->
+    <div class="result-section">
+      <h3>🦵 片足立ちバランス</h3>
+      <div class="bal-row">
+        <div class="bal-chip">
+          <div class="ft">左足</div>
+          <div class="sec" id="res-l">—</div>
+          <div class="un">秒</div>
+          <div class="gr" id="gr-l"></div>
+        </div>
+        <div class="bal-chip">
+          <div class="ft">右足</div>
+          <div class="sec" id="res-r">—</div>
+          <div class="un">秒</div>
+          <div class="gr" id="gr-r"></div>
+        </div>
+      </div>
+      <div class="score-bar"><div class="score-fill" id="bal-fill" style="width:0%"></div></div>
+      <div class="result-note" id="bal-note"></div>
+    </div>
+
+    <!-- 姿勢 -->
+    <div class="result-section">
+      <h3>🧍 姿勢分析（AIシミュレーション）</h3>
+      <img id="result-photo" alt="姿勢写真" />
+      <div class="result-note" id="posture-note"></div>
+    </div>
+
+    <!-- 総合 -->
+    <div class="combined-box" id="combined-box"></div>
+
+    <button class="btn btn-success" onclick="goComplete()">✅ 全測定完了！レポートへ</button>
+    <button class="btn btn-secondary" onclick="resetAll()">最初に戻る（次の利用者）</button>
+  </div>
+</div>
+
+<script>
+  // ===== 状態 =====
+  const state = {
+    leftHeld:  0,
+    rightHeld: 0,
+    hasPhoto:  false,
+    photoUrl:  null,
+    prevA:     null,
+    aborted:   false,
+  };
+
+  let audioCtx       = null;
+  let camStream      = null;
+  let wakeLock       = null;
+  let resolveBalance = null;
+  let balanceTimerInterval = null;
+  let balanceRemaining     = 30;
+  let qrScanner      = null;
+  let userData       = null;
+
+  const CIRC = 2 * Math.PI * 78; // ≈ 490
+
+  // ===== QRスキャン =====
+  function startQrScan() {
+    showScreen('screen-scan');
+    qrScanner = new Html5Qrcode('qr-reader-b');
+    qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (text) => {
+        qrScanner.stop().catch(() => {});
+        qrScanner = null;
+        parseQrText(text);
+      },
+      () => {}
+    ).catch(() => {
+      alert('カメラが使用できません。QRデータを直接貼り付けてください。');
+      showScreen('screen-start');
+    });
+  }
+
+  function stopScan() {
+    if (qrScanner) { qrScanner.stop().catch(() => {}); qrScanner = null; }
+    showScreen('screen-start');
+  }
+
+  function parseManualQr() {
+    parseQrText(document.getElementById('manual-qr-b').value.trim());
+  }
+
+  function parseQrText(text) {
+    const errEl = document.getElementById('qr-error-b');
+    try {
+      const raw = JSON.parse(text);
+      if (!raw.age) throw new Error('invalid');
+      const GENDER = { M: '男性', F: '女性' };
+      const TIER   = ['現役世代', '熟年層', 'シニア層'];
+      userData = {
+        id:     raw.id,
+        email:  raw.em  || raw.email || raw.name || '',
+        gender: GENDER[raw.g] || raw.gender || '',
+        age:    raw.age,
+        height: raw.ht  || raw.height || '',
+        weight: raw.wt  || raw.weight || '',
+        tier:   (raw.t != null ? TIER[raw.t] : null) || raw.tier || '',
+        fukuY:  raw.fy  ?? raw.fukuY,
+        kata:   raw.k   ?? raw.kata,
+      };
+      if (!userData.tier) throw new Error('invalid');
+      errEl.style.display = 'none';
+      setupReady();
+    } catch(e) {
+      errEl.style.display = 'block';
+      showScreen('screen-start');
+    }
+  }
+
+  function setupReady() {
+    const u = userData;
+    document.getElementById('ready-user-info').innerHTML = `
+      <div class="row"><span>受付ID</span><span>${u.id || '—'}</span></div>
+      <div class="row"><span>性別</span><span>${u.gender || '—'}</span></div>
+      <div class="row"><span>年齢</span><span>${u.age} 歳（${u.tier}）</span></div>
+      <div class="row"><span>身長 / 体重</span><span>${u.height}cm / ${u.weight}kg</span></div>
+    `;
+    // ブースA測定済み/未測定の判定
+    const raw     = sessionStorage.getItem('boothA_result');
+    const chipEl  = document.getElementById('booth-a-chip');
+    const statEl  = document.getElementById('booth-a-status');
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (!u.id || d.uid === u.id) {
+        state.prevA = d;
+        chipEl.className = 'status-chip done';
+        statEl.textContent = '✅ 測定済み';
+      } else {
+        state.prevA = null;
+        chipEl.className = 'status-chip skip';
+        statEl.textContent = '⬜ 未測定';
+      }
+    } else {
+      state.prevA = null;
+      chipEl.className = 'status-chip skip';
+      statEl.textContent = '⬜ 未測定';
+    }
+    showScreen('screen-intro');
+  }
+
+  // ===== 画面切り替え =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    el.classList.remove('fade-in');
+    void el.offsetWidth;
+    el.classList.add('fade-in');
+    window.scrollTo(0, 0);
+  }
+
+  // ===== 音声 =====
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function playBeep(freq=880, dur=0.1, gain=0.3) {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(gain, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  }
+  function playChime() {
+    [523,659,784,1047].forEach((f,i) => setTimeout(()=>playBeep(f,0.18,0.35), i*160));
+  }
+  function playConfirm() {
+    // ✓ 確認音：低→高の2音チャイム
+    playBeep(660, 0.12, 0.35);
+    setTimeout(() => playBeep(990, 0.18, 0.4), 130);
+  }
+  function playShutter() {
+    playBeep(220,0.07,0.5); setTimeout(()=>playBeep(180,0.1,0.4),80);
+  }
+
+  // ===== 音声合成 =====
+  function speakAsync(text, rate=0.88) {
+    return new Promise(resolve => {
+      if (!window.speechSynthesis) { resolve(); return; }
+      window.speechSynthesis.cancel();
+
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang  = 'ja-JP';
+      utt.rate  = rate;
+      utt.pitch = 1.05;
+
+      // 文字数ベースの最大待機時間（安全網）
+      const maxWait = Math.max((text.length / 5) * 1000 + 2500, 3000);
+      const timer = setTimeout(() => { window.speechSynthesis.cancel(); resolve(); }, maxWait);
+
+      utt.onend   = () => { clearTimeout(timer); setTimeout(resolve, 150); };
+      utt.onerror = () => { clearTimeout(timer); resolve(); };
+      window.speechSynthesis.speak(utt);
+    });
+  }
+
+  // ノンブロッキング読み上げ（タイマー中の割り込みアナウンス用）
+  function speakOnly(text, rate=0.9) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'ja-JP'; utt.rate = rate;
+    window.speechSynthesis.speak(utt);
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  // ===== UIヘルパー =====
+  function setPhase(label) {
+    document.getElementById('phase-badge').textContent = label;
+  }
+  function setInstruction(text) {
+    document.getElementById('instruction-text').textContent = text;
+  }
+  function setStatus(text) {
+    document.getElementById('status-line').textContent = text;
+  }
+
+  // カウントダウン数字表示
+  function showCdNumber(val) {
+    const el = document.getElementById('cd-number');
+    el.textContent = val;
+    el.style.display = 'block';
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = 'cdPulse 0.6s ease';
+  }
+  function hideCdNumber() {
+    document.getElementById('cd-number').style.display = 'none';
+  }
+
+  // 検出オーバーレイ
+  function showDetecting(msg='AIが確認中...') {
+    const ov = document.getElementById('detect-overlay');
+    ov.classList.remove('confirmed');
+    ov.classList.add('visible');
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('detect-text').textContent = msg;
+    ov.querySelector('.check-icon')?.remove();
+  }
+  function showDetected(msg='✓ 検出しました！') {
+    const ov = document.getElementById('detect-overlay');
+    ov.classList.add('confirmed');
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('detect-text').textContent = msg;
+    const ico = document.createElement('div');
+    ico.className = 'check-icon';
+    ico.textContent = '✅';
+    ov.prepend(ico);
+  }
+  function hideDetecting() {
+    document.getElementById('detect-overlay').classList.remove('visible','confirmed');
+    document.getElementById('detect-overlay').querySelector('.check-icon')?.remove();
+  }
+
+  // バランスタイマー表示
+  function showTimer(side, secLeft) {
+    hideCdNumber();
+    document.getElementById('timer-wrap').style.display = 'flex';
+    document.getElementById('foot-down-btn').style.display = 'block';
+    document.getElementById('foot-label').textContent =
+      side === 'left' ? '🦵 左足で立っています' : '🦵 右足で立っています';
+    updateTimerRing(secLeft, 30);
+  }
+  function hideTimer() {
+    document.getElementById('timer-wrap').style.display = 'none';
+    document.getElementById('foot-down-btn').style.display = 'none';
+  }
+  function updateTimerRing(secLeft, total) {
+    document.getElementById('timer-secs').textContent = secLeft;
+    const progress = (total - secLeft) / total;
+    document.getElementById('ring-fg').style.strokeDashoffset = CIRC * progress;
+  }
+
+  // 写真カウントダウン数字
+  function showPhotoCd(val) {
+    const el = document.getElementById('photo-cd-num');
+    el.textContent = val;
+    el.style.display = 'block';
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = 'cdPulse 0.6s ease';
+  }
+  function hidePhotoCd() { document.getElementById('photo-cd-num').style.display = 'none'; }
+
+  // ===== カメラ起動 =====
+  async function startCamera() {
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width:{ ideal:640 }, height:{ ideal:480 } },
+        audio: false
+      });
+      document.getElementById('cam-video').srcObject = camStream;
+      document.getElementById('camera-wrap').style.maxHeight = '260px';
+    } catch(e) {
+      document.getElementById('camera-wrap').style.background = '#1e293b';
+      document.getElementById('camera-wrap').style.height = '80px';
+      setStatus('カメラが使用できません（音声ガイドのみで進みます）');
+    }
+  }
+
+  // ===== スリープ防止 =====
+  async function keepAwake() {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch(e) { /* 非対応ブラウザは無視 */ }
+  }
+
+  // ===== メイン開始 =====
+  async function startFlow() {
+    document.getElementById('start-btn').disabled = true;
+    initAudio();
+    showScreen('screen-measure');
+    await keepAwake();
+    await startCamera();
+    await runFlow();
+  }
+
+  // ===== メインフロー（全自動） =====
+  async function runFlow() {
+    if (state.aborted) return;
+
+    // ── キャリブレーション 1：腕クロス ──
+    setPhase('キャリブレーション ①');
+    setInstruction('胸の前で腕を\n×にクロスさせてください');
+    setStatus('');
+    await speakAsync('胸の前で腕をバツ印にクロスさせてください。');
+    if (state.aborted) return;
+
+    showDetecting('腕の位置を確認中...');
+    await sleep(4500);
+    if (state.aborted) return;
+    showDetected('✓ 腕の位置を検出しました');
+    playConfirm();
+    await sleep(1200);
+    hideDetecting();
+
+    // ── キャリブレーション 2：上半身ひねり ──
+    if (state.aborted) return;
+    setPhase('キャリブレーション ②');
+    setInstruction('腕はそのままで\n上半身を左右に1回ずつひねってください');
+    await speakAsync('ありがとうございます。腕はそのままで上半身を左右に1回ずつゆっくりひねってください。');
+    if (state.aborted) return;
+
+    showDetecting('体の中心を計算中...');
+    await sleep(6000);
+    if (state.aborted) return;
+    showDetected('✓ 体の中心を記憶しました。');
+    playConfirm();
+    await sleep(1200);
+    hideDetecting();
+
+    // ── キャリブレーション 3：目を閉じて左足立ち準備 ──
+    if (state.aborted) return;
+    setPhase('キャリブレーション ③');
+    setInstruction('目を閉じて\n右足をゆっくり上げてください');
+    await speakAsync('ありがとうございます。次は目を閉じて、左足で片足立ちをします。目を閉じて、右足をゆっくり上げてください。');
+    if (state.aborted) return;
+
+    showDetecting('姿勢を確認中...');
+    await sleep(5000);
+    if (state.aborted) return;
+    showDetected('✓ 準備完了を確認しました');
+    playConfirm();
+    await sleep(1000);
+    hideDetecting();
+
+    // ── 左足 開始カウントダウン ──
+    if (state.aborted) return;
+    setPhase('左足バランス 開始前');
+    setInstruction('測定開始 5秒前');
+    await speakAsync('測定開始5秒前。');
+    if (state.aborted) return;
+    for (let i = 4; i >= 1; i--) {
+      showCdNumber(i);
+      playBeep(660, 0.12, 0.35);
+      await speakAsync(String(i), 1.0);
+      if (state.aborted) return;
+    }
+    showCdNumber('GO!');
+    playBeep(1100, 0.2, 0.5);
+    await speakAsync('スタート！', 1.1);
+    hideCdNumber();
+
+    // ── 左足バランス 30秒 ──
+    if (state.aborted) return;
+    setPhase('左足バランス測定中');
+    setInstruction('目を閉じたまま\nバランスをキープしてください');
+    showTimer('left', 30);
+    state.leftHeld = await runBalance('left', 30);
+    if (state.aborted) return;
+    hideTimer();
+
+    // ── 左足終了 → 右足切り替え ──
+    setPhase('足の切り替え');
+    setInstruction('左足終了！\n次は右足です');
+    playChime();
+    await speakAsync('左足終了です。ありがとうございます。次は右足です。目を閉じて、左足をゆっくり上げてください。');
+    if (state.aborted) return;
+
+    showDetecting('右足の準備を確認中...');
+    await sleep(5000);
+    if (state.aborted) return;
+    showDetected('✓ 準備完了を確認しました');
+    playConfirm();
+    await sleep(1000);
+    hideDetecting();
+
+    // ── 右足 開始カウントダウン ──
+    if (state.aborted) return;
+    setPhase('右足バランス 開始前');
+    setInstruction('測定開始 5秒前');
+    await speakAsync('測定開始5秒前。');
+    if (state.aborted) return;
+    for (let i = 4; i >= 1; i--) {
+      showCdNumber(i);
+      playBeep(660, 0.12, 0.35);
+      await speakAsync(String(i), 1.0);
+      if (state.aborted) return;
+    }
+    showCdNumber('GO!');
+    playBeep(1100, 0.2, 0.5);
+    await speakAsync('スタート！', 1.1);
+    hideCdNumber();
+
+    // ── 右足バランス 30秒 ──
+    if (state.aborted) return;
+    setPhase('右足バランス測定中');
+    setInstruction('目を閉じたまま\nバランスをキープしてください');
+    showTimer('right', 30);
+    state.rightHeld = await runBalance('right', 30);
+    if (state.aborted) return;
+    hideTimer();
+
+    // ── 姿勢写真 ──
+    setPhase('姿勢写真');
+    setInstruction('姿勢写真を撮ります\n正面を向いて自然に立ってください');
+    playChime();
+    await speakAsync('右足終了です。大変お疲れさまでした。次に姿勢写真を撮ります。そのままの位置で、正面を向いて、手を自然に下ろしてください。');
+    if (state.aborted) return;
+    await sleep(2500);
+
+    // 5秒前カウントダウン
+    setInstruction('5秒後に撮影します\n正面を向いて自然に立ってください');
+    showPhotoCd('5'); playBeep(440, 0.1, 0.25); await speakAsync('5秒前。');
+    if (state.aborted) return;
+    showPhotoCd('4'); playBeep(440, 0.1, 0.22); await sleep(1000);
+    if (state.aborted) return;
+
+    // 3・2・1・カシャッ
+    setInstruction('3・2・1・カシャッ！');
+    showPhotoCd('3'); playBeep(660,0.12,0.35); await speakAsync('3。');
+    if (state.aborted) return;
+    showPhotoCd('2'); playBeep(660,0.12,0.35); await speakAsync('2。');
+    if (state.aborted) return;
+    showPhotoCd('1'); playBeep(660,0.12,0.35); await speakAsync('1。');
+    if (state.aborted) return;
+    hidePhotoCd();
+    capturePhoto();
+    await sleep(2500);
+
+    // ── 結果へ ──
+    if (state.aborted) return;
+    buildResult();
+    showScreen('screen-result');
+  }
+
+  // ===== バランスタイマー（Date.now()ベース・高精度） =====
+  function runBalance(side, total) {
+    return new Promise(resolve => {
+      const startTime = Date.now();
+      const announced = new Set();
+      balanceRemaining = total;
+
+      updateTimerRing(total, total);
+
+      balanceTimerInterval = setInterval(() => {
+        const elapsed   = (Date.now() - startTime) / 1000;
+        const remaining = Math.max(0, total - elapsed);
+        balanceRemaining = remaining;
+        updateTimerRing(remaining, total);
+
+        const ep = Math.floor(elapsed);
+        if (ep === 10 && !announced.has(10)) { announced.add(10); speakOnly('10秒経過。あと20秒です。'); }
+        if (ep === 20 && !announced.has(20)) { announced.add(20); speakOnly('あと10秒。もう少しです。'); }
+        if (ep === 25 && !announced.has(25)) { announced.add(25); speakOnly('あと5秒。'); }
+        if (remaining > 0 && remaining <= 3)  playBeep(880, 0.08, 0.25);
+
+        if (elapsed >= total) {
+          clearInterval(balanceTimerInterval);
+          document.getElementById('foot-down-btn').style.display = 'none';
+          resolve(total);
+        }
+      }, 50);
+
+      resolveBalance = () => {
+        clearInterval(balanceTimerInterval);
+        document.getElementById('foot-down-btn').style.display = 'none';
+        const held = Math.min((Date.now() - startTime) / 1000, total);
+        resolve(Math.round(held * 10) / 10);
+      };
+    });
+  }
+
+  // ===== 足が下りた（スタッフ操作） =====
+  function footDown() {
+    if (!resolveBalance) return;
+    const heldDisplay = Math.round(30 - balanceRemaining);
+    speakOnly(`${heldDisplay}秒で足が下りました。`);
+    playBeep(440, 0.2, 0.3);
+    const fn = resolveBalance;
+    resolveBalance = null;
+    fn();
+  }
+
+  // ===== 写真撮影 =====
+  function capturePhoto() {
+    playShutter();
+
+    // カメラフラッシュ演出
+    const wrap = document.getElementById('camera-wrap');
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:white;opacity:0.85;border-radius:0;pointer-events:none;transition:opacity 0.4s';
+    wrap.appendChild(flash);
+    setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 400); }, 50);
+
+    const video  = document.getElementById('cam-video');
+    const canvas = document.getElementById('cap-canvas');
+    canvas.width  = video.videoWidth  || 480;
+    canvas.height = video.videoHeight || 640;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    state.photoUrl = dataUrl;
+    state.hasPhoto = !!dataUrl;
+
+    // プレビュー
+    const prev = document.getElementById('captured-preview');
+    prev.src = dataUrl;
+    prev.style.display = 'block';
+    prev.style.maxHeight = '120px';
+    prev.style.objectFit = 'cover';
+    setInstruction('撮影しました ✓');
+    setStatus('写真を保存しています...');
+
+    // カメラ停止
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    video.style.display = 'none';
+  }
+
+  // ===== 結果生成 =====
+  function buildResult() {
+    const ls = state.leftHeld;
+    const rs = state.rightHeld;
+    const avg = (ls + rs) / 2;
+
+    function grade(s) {
+      if (s >= 28) return { txt:'優秀 🌟', color:'#059669' };
+      if (s >= 20) return { txt:'良好 ✅', color:'#0284c7' };
+      if (s >= 10) return { txt:'普通 🔶', color:'#d97706' };
+      return              { txt:'要改善 ⚠️', color:'#dc2626' };
+    }
+    const lg = grade(ls), rg = grade(rs);
+
+    document.getElementById('res-l').textContent = ls;
+    document.getElementById('res-r').textContent = rs;
+    document.getElementById('gr-l').textContent  = lg.txt;
+    document.getElementById('gr-l').style.color  = lg.color;
+    document.getElementById('gr-r').textContent  = rg.txt;
+    document.getElementById('gr-r').style.color  = rg.color;
+
+    const balScore = Math.round((avg / 30) * 100);
+    setTimeout(() => document.getElementById('bal-fill').style.width = balScore + '%', 200);
+
+    const diff = Math.abs(ls - rs);
+    let balNote = '';
+    if (diff >= 10) balNote = `⚠️ 左右差が <b>${diff}秒</b> あります。利き足への体重集中が疑われます。`;
+    else if (diff >= 5) balNote = `🔶 左右差が <b>${diff}秒</b>。軽度のアンバランスが見られます。`;
+    else balNote = `✅ 左右差 <b>${diff}秒</b> でほぼ均等。良好なバランスです。`;
+    document.getElementById('bal-note').innerHTML = balNote + `<br>バランススコア：<b>${balScore}点 / 100点</b>`;
+
+    // 姿勢写真
+    if (state.hasPhoto && state.photoUrl) {
+      const rp = document.getElementById('result-photo');
+      rp.src = state.photoUrl;
+      rp.style.display = 'block';
+    }
+    document.getElementById('posture-note').innerHTML =
+      state.hasPhoto
+        ? 'AIが姿勢を解析中です（本番版でスコアが表示されます）。'
+        : '姿勢写真はスキップされました。';
+
+    // 総合
+    const prevA = state.prevA;
+    let combinedHtml = '🏅 <b>2ブース総合コメント</b><br>';
+    if (prevA) {
+      const combined = Math.round((prevA.total + balScore) / 2);
+      const level = combined >= 80 ? 'S評価（優秀）' : combined >= 65 ? 'A評価（良好）' :
+                    combined >= 50 ? 'B評価（普通）' : 'C評価（要改善）';
+      combinedHtml += `ブースA：${prevA.total}点 ／ ブースB：${balScore}点<br>`;
+      combinedHtml += `2ブース平均：<b>${combined}点（${level}）</b>`;
+      document.getElementById('total-num').textContent = combined;
+      document.getElementById('result-sub').textContent = `${prevA.tier || ''}の2ブース測定が完了しました。`;
+      sessionStorage.setItem('final_result', JSON.stringify({
+        ...prevA, leftHeld: ls, rightHeld: rs, balScore, combined,
+        hasPhoto: state.hasPhoto
+      }));
+    } else {
+      document.getElementById('total-num').textContent = balScore;
+      combinedHtml += 'ブースB単独スコアを表示しています。';
+    }
+    document.getElementById('combined-box').innerHTML = combinedHtml;
+
+    // ===== localStorage へ測定結果を保存 =====
+    const allRecords = JSON.parse(localStorage.getItem('aidock_records') || '[]');
+    const cfgRaw     = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
+    const combined   = prevA ? Math.round((prevA.total + balScore) / 2) : balScore;
+
+    const measureData = {
+      venue:        cfgRaw.selectedVenue || '',
+      boothA_count: prevA?.count  ?? null,
+      boothA_sec:   prevA?.sec    ?? null,
+      boothA_score: prevA?.total  ?? null,
+      leftHeld:     ls,
+      rightHeld:    rs,
+      balScore:     balScore,
+      combined:     combined,
+      hasPhoto:     state.hasPhoto,
+      completedAt:  new Date().toISOString(),
+    };
+
+    const recIdx = allRecords.findIndex(r => r.uid === (prevA?.uid || ''));
+    if (recIdx >= 0) {
+      allRecords[recIdx] = { ...allRecords[recIdx], ...measureData };
+    } else {
+      allRecords.push({ uid: 'B_ONLY_' + Date.now(), ...measureData });
+    }
+    localStorage.setItem('aidock_records', JSON.stringify(allRecords));
+  }
+
+  // ===== 中断 =====
+  function confirmAbort() {
+    if (!confirm('測定を中断しますか？\n（測定データはリセットされます）')) return;
+    abortFlow();
+  }
+  function abortFlow() {
+    state.aborted = true;
+    clearInterval(balanceTimerInterval);
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    wakeLock && wakeLock.release().catch(() => {});
+    resetAll();
+  }
+
+  // ===== リセット =====
+  function resetAll() {
+    Object.assign(state, { leftHeld:0, rightHeld:0, hasPhoto:false, photoUrl:null, prevA:null, aborted:false });
+    resolveBalance = null;
+    userData = null;
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('captured-preview').style.display = 'none';
+    document.getElementById('cam-video').style.display = 'block';
+    document.getElementById('manual-qr-b').value = '';
+    document.getElementById('qr-error-b').style.display = 'none';
+    showScreen('screen-start');
+  }
+
+  // ===== 完了 → レポートへ =====
+  function goComplete() {
+    // 姿勢写真をsessionStorageに渡す
+    if (state.hasPhoto && state.photoUrl) {
+      sessionStorage.setItem('posture_photo', state.photoUrl);
+    }
+    window.location.href = 'result.html';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理者設定｜からだ年齢 AIドック</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary:      #1e40af;
+      --primary-dark: #1e3a8a;
+      --accent:       #10b981;
+      --danger:       #ef4444;
+      --warn:         #f59e0b;
+      --bg:           #f1f5f9;
+      --card:         #ffffff;
+      --text:         #1e293b;
+      --sub:          #64748b;
+      --border:       #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: linear-gradient(135deg, #1e3a8a, #1e40af);
+      color: white;
+      padding: 14px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header p  { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border-radius: 16px;
+      margin: 14px 16px;
+      padding: 24px 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 6px; }
+    .card .sub { font-size: 0.78rem; color: var(--sub); margin-bottom: 18px; line-height: 1.6; }
+
+    /* ===== ボタン ===== */
+    .btn {
+      display: block; width: 100%; padding: 14px;
+      border: none; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 8px;
+    }
+    .btn:last-child { margin-bottom: 0; }
+    .btn-primary  { background: linear-gradient(135deg,#1e40af,#1e3a8a); color:white; box-shadow:0 4px 12px rgba(30,64,175,.3); }
+    .btn-primary:hover  { transform: translateY(-1px); }
+    .btn-secondary { background: var(--border); color: var(--sub); }
+    .btn-danger    { background: linear-gradient(135deg,#ef4444,#dc2626); color:white; }
+    .btn-warn      { background: linear-gradient(135deg,#f59e0b,#d97706); color:white; }
+    .btn-sm {
+      display: inline-block; width: auto; padding: 7px 14px;
+      font-size: 0.8rem; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 600; transition: all 0.15s;
+    }
+    .btn-sm-primary  { background: var(--primary); color: white; }
+    .btn-sm-danger   { background: #fee2e2; color: #dc2626; }
+    .btn-sm-danger:hover { background: #fecaca; }
+
+    /* ===== 画面切り替え ===== */
+    .screen { display: none; width: 100%; max-width: 480px; flex-direction: column; }
+    .screen.active { display: flex; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ===== PINログイン ===== */
+    .pin-display {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .pin-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: white;
+      transition: all 0.2s;
+    }
+    .pin-dot.filled { background: var(--primary); border-color: var(--primary); }
+
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 260px;
+      margin: 0 auto 16px;
+    }
+    .pin-key {
+      padding: 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      font-size: 1.3rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .pin-key:hover  { background: #eff6ff; border-color: var(--primary); }
+    .pin-key:active { transform: scale(0.94); }
+    .pin-key.del    { font-size: 1rem; color: var(--sub); }
+    .pin-key.empty  { visibility: hidden; }
+
+    .pin-error {
+      display: none;
+      background: #fee2e2; color: #991b1b;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 0.82rem; text-align: center; margin-top: 8px;
+    }
+    .pin-hint {
+      font-size: 0.72rem; color: var(--sub); text-align: center; margin-top: 6px;
+    }
+
+    /* ===== セクションヘッダー ===== */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      background: #eff6ff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+    }
+    .section-title .icon { font-size: 1.1rem; }
+
+    /* ===== 会場名リスト ===== */
+    .venue-list { margin-bottom: 14px; }
+    .venue-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      background: #fafafa;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .venue-item:hover { background: #eff6ff; border-color: #93c5fd; }
+    .venue-item.selected {
+      background: #eff6ff; border-color: var(--primary);
+      font-weight: 700; color: var(--primary-dark);
+    }
+    .venue-item .venue-name { font-size: 0.9rem; flex: 1; }
+    .venue-item .venue-actions { display: flex; gap: 6px; }
+
+    .venue-add-row {
+      display: flex; gap: 8px; margin-top: 10px;
+    }
+    .venue-add-row input {
+      flex: 1; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 0.9rem; outline: none;
+    }
+    .venue-add-row input:focus { border-color: var(--primary); }
+
+    .selected-venue-badge {
+      background: #dcfce7; border: 1.5px solid #86efac;
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 0.85rem; color: #166534;
+      margin-bottom: 14px; display: flex;
+      align-items: center; gap: 8px;
+    }
+
+    /* ===== モード選択 ===== */
+    .mode-option {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-option:hover { border-color: #93c5fd; background: #f8faff; }
+    .mode-option.selected { border-color: var(--primary); background: #eff6ff; }
+
+    .mode-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .mode-radio {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: white;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .mode-option.selected .mode-radio {
+      border-color: var(--primary); background: var(--primary);
+    }
+    .mode-option.selected .mode-radio::after {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: white;
+    }
+    .mode-label { font-size: 0.95rem; font-weight: 700; }
+    .mode-rec {
+      font-size: 0.7rem; font-weight: 700; color: white;
+      background: var(--accent); border-radius: 999px;
+      padding: 2px 8px;
+    }
+    .mode-desc {
+      font-size: 0.8rem; color: var(--sub); line-height: 1.6; margin-left: 30px;
+    }
+    .mode-desc table { width: 100%; margin-top: 6px; border-collapse: collapse; }
+    .mode-desc td { padding: 3px 6px; font-size: 0.78rem; }
+    .mode-desc td:first-child { color: var(--sub); width: 45%; }
+    .mode-desc tr { border-bottom: 1px solid var(--border); }
+    .mode-desc tr:last-child { border-bottom: none; }
+
+    /* カスタム時間入力 */
+    .custom-time-row {
+      display: flex; gap: 12px; align-items: center;
+      background: #f8fafc; border-radius: 10px;
+      padding: 12px; margin-top: 8px; margin-left: 30px;
+    }
+    .custom-time-item { flex: 1; text-align: center; }
+    .custom-time-item label { font-size: 0.72rem; color: var(--sub); display: block; margin-bottom: 4px; }
+    .custom-time-item input {
+      width: 100%; padding: 8px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 1rem; font-weight: 700; text-align: center; outline: none;
+    }
+    .custom-time-item input:focus { border-color: var(--primary); }
+    .custom-time-item span { font-size: 0.75rem; color: var(--sub); }
+
+    /* ===== バックスイッチ ===== */
+    .back-switch-box {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .back-switch-box.on { border-color: var(--warn); background: #fffbeb; }
+
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .switch-label { font-size: 0.95rem; font-weight: 700; }
+    .toggle-wrap { position: relative; width: 52px; height: 28px; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--border); border-radius: 999px;
+      cursor: pointer; transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: white;
+      top: 3px; left: 3px;
+      transition: 0.3s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .toggle-slider { background: var(--warn); }
+    input:checked + .toggle-slider::before { transform: translateX(24px); }
+
+    .back-switch-warn {
+      background: #fef3c7; border-radius: 8px;
+      padding: 10px 12px; font-size: 0.78rem;
+      color: #92400e; line-height: 1.7;
+    }
+    .back-switch-on-msg {
+      display: none;
+      margin-top: 10px; padding: 10px 12px;
+      background: #fef9c3; border: 1px solid #fde047;
+      border-radius: 8px; font-size: 0.82rem;
+      font-weight: 700; color: #713f12; text-align: center;
+    }
+
+    /* ===== 設定保存バナー ===== */
+    #save-banner {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #1e3a8a; color: white;
+      border-radius: 12px; padding: 12px 24px;
+      font-size: 0.88rem; font-weight: 700;
+      box-shadow: 0 4px 20px rgba(30,58,138,0.4);
+      display: none; white-space: nowrap;
+      animation: slideUp 0.3s ease;
+      z-index: 99;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    /* ===== PIN変更 ===== */
+    .pin-change-row {
+      display: flex; gap: 8px; align-items: center; margin-top: 10px;
+    }
+    .pin-change-row input {
+      flex: 1; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 1rem; letter-spacing: 0.15em; text-align: center; outline: none;
+    }
+    .pin-change-row input:focus { border-color: var(--primary); }
+
+    /* ===== 申込URL生成 ===== */
+    .url-result-box {
+      background: #f0fdf4; border: 1.5px solid #86efac;
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+    }
+    .url-result-box .url-text {
+      font-size: 0.75rem; color: #166534; word-break: break-all;
+      font-family: monospace; background: white;
+      border-radius: 6px; padding: 8px 10px; margin: 8px 0;
+    }
+    .url-copy-row {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .venue-qr-card {
+      background: white; border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      margin-top: 12px;
+    }
+    .venue-qr-card .qr-caption {
+      font-size: 0.78rem; color: var(--sub); text-align: center; line-height: 1.6;
+    }
+    .url-gen-warning {
+      background: #fef9c3; border: 1px solid #fde047;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 0.82rem; color: #713f12;
+      margin-bottom: 12px;
+    }
+
+    /* ===== データ一覧 ===== */
+    .data-chip {
+      background: #f1f5f9; border-radius: 8px; padding: 8px 12px;
+      font-size: 0.78rem; color: var(--sub); margin-bottom: 6px;
+    }
+    .data-chip b { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔒 管理者設定｜からだ年齢 AIドック</h1>
+  <p>運営スタッフ専用画面</p>
+</header>
+
+<!-- ===== PINログイン画面 ===== -->
+<div class="screen active fade-in" id="screen-pin">
+  <div class="card">
+    <h2>🔑 スタッフ認証</h2>
+    <p class="sub">この画面は運営スタッフのみアクセスできます。<br>管理者PINコードを入力してください。</p>
+
+    <div class="pin-display">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinInput('1')">1</button>
+      <button class="pin-key" onclick="pinInput('2')">2</button>
+      <button class="pin-key" onclick="pinInput('3')">3</button>
+      <button class="pin-key" onclick="pinInput('4')">4</button>
+      <button class="pin-key" onclick="pinInput('5')">5</button>
+      <button class="pin-key" onclick="pinInput('6')">6</button>
+      <button class="pin-key" onclick="pinInput('7')">7</button>
+      <button class="pin-key" onclick="pinInput('8')">8</button>
+      <button class="pin-key" onclick="pinInput('9')">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" onclick="pinInput('0')">0</button>
+      <button class="pin-key del" onclick="pinDelete()">⌫</button>
+    </div>
+
+    <div class="pin-error" id="pin-error">⚠️ PINコードが正しくありません</div>
+    <p class="pin-hint">（初期PIN：1234）</p>
+  </div>
+</div>
+
+<!-- ===== メイン設定画面 ===== -->
+<div class="screen fade-in" id="screen-admin">
+
+  <!-- ① 会場名 -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">🏟️</span>会場名の管理
+    </div>
+
+    <div id="selected-venue-badge" class="selected-venue-badge" style="display:none">
+      <span>✅</span>
+      <span>本日の会場：<b id="selected-venue-name"></b></span>
+    </div>
+
+    <p style="font-size:0.8rem; color:var(--sub); margin-bottom:10px;">
+      会場名をタップして「本日の会場」に選択してください。
+    </p>
+
+    <div class="venue-list" id="venue-list"></div>
+
+    <div class="venue-add-row">
+      <input type="text" id="venue-input" placeholder="新しい会場名を入力" maxlength="30" />
+      <button class="btn-sm btn-sm-primary" onclick="addVenue()">追加</button>
+    </div>
+  </div>
+
+  <!-- ② 測定時間モード -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">⏱️</span>測定時間モードの設定
+    </div>
+
+    <!-- 自動年齢切り替え -->
+    <div class="mode-option" id="mode-auto" onclick="selectMode('auto')">
+      <div class="mode-header">
+        <div class="mode-radio"></div>
+        <span class="mode-label">自動年齢切り替え</span>
+        <span class="mode-rec">推奨</span>
+      </div>
+      <div class="mode-desc">
+        受付時の年齢から、AIが自動でタイマー時間を3段階に切り替えます。
+        <table>
+          <tr><td>現役世代（〜50歳）</td><td>反復横跳び <b>60秒</b> ／ 片足立ち <b>30秒</b></td></tr>
+          <tr><td>熟年層（51〜64歳）</td><td>反復横跳び <b>40秒</b> ／ 片足立ち <b>30秒</b></td></tr>
+          <tr><td>シニア層（65歳〜）</td><td>反復横跳び <b>20秒</b> ／ 片足立ち <b>30秒</b></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- カスタム時間 -->
+    <div class="mode-option" id="mode-custom" onclick="selectMode('custom')">
+      <div class="mode-header">
+        <div class="mode-radio"></div>
+        <span class="mode-label">カスタム時間</span>
+      </div>
+      <div class="mode-desc">
+        運営者が意図的に秒数を指定するモード。
+        <div class="custom-time-row" id="custom-time-row">
+          <div class="custom-time-item">
+            <label>反復横跳び</label>
+            <input type="number" id="custom-fukuy" value="60" min="10" max="120" />
+            <span>秒</span>
+          </div>
+          <div class="custom-time-item">
+            <label>片足立ち（左右各）</label>
+            <input type="number" id="custom-kata" value="30" min="10" max="60" />
+            <span>秒</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 標準モード -->
+    <div class="mode-option" id="mode-standard" onclick="selectMode('standard')">
+      <div class="mode-header">
+        <div class="mode-radio"></div>
+        <span class="mode-label">標準モード</span>
+      </div>
+      <div class="mode-desc">
+        年齢に関わらず一律で固定します。<br>
+        反復横跳び <b>60秒</b> ／ 片足立ち <b>30秒</b>（左右各）
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveSettings()">この設定を保存する ✓</button>
+  </div>
+
+  <!-- ③ 申込フォームURL生成 -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">🔗</span>申込フォームURLの生成
+    </div>
+
+    <p style="font-size:0.82rem; color:var(--sub); margin-bottom:12px; line-height:1.7;">
+      会場名・測定モードを設定・保存してから「生成する」を押してください。<br>
+      生成されたQRコードを会場に掲示すると、参加者がスマホで読み取り自分で申し込めます。
+    </p>
+
+    <div class="url-gen-warning" id="url-gen-warning">
+      ⚠️ まず「会場名」を選択し、「測定時間モード」を保存してください。
+    </div>
+
+    <button class="btn btn-primary" id="gen-url-btn" onclick="generateVenueUrl()" style="margin-bottom:0;">
+      🔗 この会場の申込URLを生成する
+    </button>
+
+    <div id="url-gen-result" style="display:none; margin-top:16px;">
+      <div class="url-result-box">
+        <div style="font-size:0.82rem; font-weight:700; color:#166534; margin-bottom:4px;">✅ 申込URL（参加者が使うURL）</div>
+        <div class="url-text" id="generated-url"></div>
+        <div class="url-copy-row">
+          <button class="btn-sm btn-sm-primary" onclick="copyVenueUrl()">📋 URLをコピー</button>
+          <button class="btn-sm btn-sm-primary" onclick="openVenueUrl()">🌐 URLを開く</button>
+        </div>
+      </div>
+
+      <div class="venue-qr-card">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--text);">📌 会場掲示用QRコード</div>
+        <div id="venue-qr-box"></div>
+        <div class="qr-caption">
+          このQRコードを印刷して会場に貼ってください。<br>
+          参加者がスマホで読み取ると申込フォームが開きます。
+        </div>
+        <button class="btn-sm btn-sm-primary" onclick="printVenueQr()">🖨️ 印刷する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ バックスイッチ -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">⚡</span>種目別バックスイッチ（混雑緩和）
+    </div>
+
+    <div class="back-switch-box" id="back-switch-box">
+      <div class="switch-row">
+        <span class="switch-label">バックスイッチ</span>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="back-toggle" onchange="toggleBack()" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="back-switch-warn">
+        ⚠️ <b>現場が大行列になった場合のみ使用してください。</b><br>
+        ONにすると：AIデータのエラーが多少あっても「測定完了」として処理し、
+        今あるデータだけでサーバー側が結果表を合成するモード（プランC）に切り替わります。
+      </div>
+
+      <div class="back-switch-on-msg" id="back-switch-on-msg">
+        🔴 バックスイッチ ON（プランCモード動作中）
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ データ出力（CSV） -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">📥</span>データ出力（CSV）
+    </div>
+
+    <!-- フィルター -->
+    <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
+      <select id="csv-filter" onchange="renderDataTable()"
+        style="flex:1; padding:9px 10px; border:1.5px solid var(--border); border-radius:10px; font-size:0.85rem; outline:none;">
+        <option value="all">全データ</option>
+        <option value="today">本日のみ</option>
+        <option value="complete">測定完了のみ</option>
+      </select>
+      <button class="btn-sm btn-sm-primary" onclick="renderDataTable()">絞り込み</button>
+    </div>
+
+    <!-- データプレビューテーブル -->
+    <div style="overflow-x:auto; margin-bottom:14px;">
+      <table id="preview-table" style="width:100%; border-collapse:collapse; font-size:0.75rem; min-width:520px;">
+        <thead>
+          <tr style="background:#eff6ff; color:var(--primary-dark);">
+            <th style="padding:7px 8px; text-align:left; white-space:nowrap; border-bottom:2px solid #bfdbfe;">受付番号</th>
+            <th style="padding:7px 8px; text-align:left; white-space:nowrap; border-bottom:2px solid #bfdbfe;">受付日時</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">性別</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">年齢</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">区分</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">横跳(回)</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">左足(秒)</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">右足(秒)</th>
+            <th style="padding:7px 8px; text-align:center; border-bottom:2px solid #bfdbfe;">総合</th>
+            <th style="padding:7px 8px; text-align:left; border-bottom:2px solid #bfdbfe;">会場</th>
+          </tr>
+        </thead>
+        <tbody id="preview-body">
+          <tr><td colspan="10" style="text-align:center; padding:16px; color:var(--sub);">データがありません</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="csv-count" style="font-size:0.78rem; color:var(--sub); margin-bottom:10px;"></div>
+
+    <!-- ダウンロードボタン -->
+    <button class="btn btn-primary" onclick="downloadCSV()">
+      📥 CSVダウンロード（Excel対応）
+    </button>
+    <button class="btn btn-secondary" onclick="copyCSV()">
+      📋 CSVをクリップボードにコピー
+    </button>
+  </div>
+
+  <!-- ④ 管理者設定 -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">⚙️</span>管理者設定
+    </div>
+
+    <p style="font-size:0.82rem; font-weight:600; margin-bottom:8px;">PINコードの変更</p>
+    <div class="pin-change-row">
+      <input type="password" id="new-pin" placeholder="新しい4桁PIN" maxlength="4" inputmode="numeric" />
+      <button class="btn-sm btn-sm-primary" onclick="changePin()">変更</button>
+    </div>
+    <p style="font-size:0.72rem; color:var(--sub); margin-top:5px; margin-bottom:18px;">
+      ※ 4桁の数字を入力してください
+    </p>
+
+    <p style="font-size:0.82rem; font-weight:600; margin-bottom:8px;">登録データ確認</p>
+    <div id="data-summary" class="data-chip">読み込み中...</div>
+
+    <button class="btn btn-danger" style="margin-top:14px;" onclick="clearAllData()">
+      ⚠️ 全データをリセット（テスト用）
+    </button>
+
+    <button class="btn btn-secondary" style="margin-top:8px;" onclick="logout()">
+      🔒 ログアウト
+    </button>
+
+    <div style="margin-top:16px; text-align:center;">
+      <a href="index.html" style="font-size:0.82rem; color:var(--primary);">← 受付画面に戻る</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- 保存バナー -->
+<div id="save-banner">✅ 設定を保存しました</div>
+
+<script>
+  // ===== デフォルト設定 =====
+  const DEFAULT_SETTINGS = {
+    pin:          '1234',
+    venues:       ['東京体育館', '大阪スポーツセンター', 'サンプル会場'],
+    selectedVenue:'',
+    timeMode:     'auto',
+    customFukuY:  60,
+    customKata:   30,
+    backSwitch:   false,
+  };
+
+  function loadSettings() {
+    const raw = localStorage.getItem('aidock_settings');
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  }
+  function saveToStorage(s) {
+    localStorage.setItem('aidock_settings', JSON.stringify(s));
+  }
+
+  let cfg = loadSettings();
+
+  // ===== PIN入力 =====
+  let pinEntered = '';
+
+  function pinInput(digit) {
+    if (pinEntered.length >= 4) return;
+    pinEntered += digit;
+    updateDots();
+    if (pinEntered.length === 4) {
+      setTimeout(checkPin, 200);
+    }
+  }
+  function pinDelete() {
+    pinEntered = pinEntered.slice(0, -1);
+    updateDots();
+    document.getElementById('pin-error').style.display = 'none';
+  }
+  function updateDots() {
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`dot-${i}`).classList.toggle('filled', i < pinEntered.length);
+    }
+  }
+  function checkPin() {
+    if (pinEntered === cfg.pin) {
+      showScreen('screen-admin');
+      renderAll();
+    } else {
+      document.getElementById('pin-error').style.display = 'block';
+      pinEntered = '';
+      updateDots();
+    }
+  }
+
+  // ===== 画面切り替え =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    el.classList.remove('fade-in');
+    void el.offsetWidth;
+    el.classList.add('fade-in');
+    window.scrollTo(0, 0);
+  }
+
+  // ===== 全UI再描画 =====
+  function renderAll() {
+    renderVenues();
+    renderMode();
+    renderBackSwitch();
+    renderDataSummary();
+  }
+
+  // ===== 会場名 =====
+  function renderVenues() {
+    const list = document.getElementById('venue-list');
+    list.innerHTML = '';
+
+    if (cfg.venues.length === 0) {
+      list.innerHTML = '<p style="font-size:0.8rem; color:var(--sub); text-align:center; padding:10px;">会場がまだ登録されていません</p>';
+    }
+
+    cfg.venues.forEach((name, idx) => {
+      const el = document.createElement('div');
+      el.className = 'venue-item' + (name === cfg.selectedVenue ? ' selected' : '');
+      el.innerHTML = `
+        <span class="venue-name">${name === cfg.selectedVenue ? '✅ ' : ''}${name}</span>
+        <div class="venue-actions">
+          <button class="btn-sm btn-sm-danger" onclick="event.stopPropagation(); deleteVenue(${idx})">削除</button>
+        </div>
+      `;
+      el.addEventListener('click', () => selectVenue(name));
+      list.appendChild(el);
+    });
+
+    const badge = document.getElementById('selected-venue-badge');
+    if (cfg.selectedVenue) {
+      badge.style.display = 'flex';
+      document.getElementById('selected-venue-name').textContent = cfg.selectedVenue;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function selectVenue(name) {
+    cfg.selectedVenue = name;
+    saveToStorage(cfg);
+    renderVenues();
+    showBanner(`「${name}」を本日の会場に設定しました`);
+  }
+
+  function addVenue() {
+    const inp = document.getElementById('venue-input');
+    const name = inp.value.trim();
+    if (!name) return;
+    if (cfg.venues.includes(name)) {
+      alert('同じ会場名が既に登録されています。');
+      return;
+    }
+    cfg.venues.push(name);
+    saveToStorage(cfg);
+    renderVenues();
+    inp.value = '';
+    showBanner(`「${name}」を追加しました`);
+  }
+
+  function deleteVenue(idx) {
+    const name = cfg.venues[idx];
+    if (!confirm(`「${name}」を削除しますか？`)) return;
+    if (cfg.selectedVenue === name) cfg.selectedVenue = '';
+    cfg.venues.splice(idx, 1);
+    saveToStorage(cfg);
+    renderVenues();
+  }
+
+  // ===== 測定時間モード =====
+  function renderMode() {
+    ['auto','custom','standard'].forEach(m => {
+      document.getElementById(`mode-${m}`).classList.toggle('selected', cfg.timeMode === m);
+    });
+    document.getElementById('custom-fukuy').value = cfg.customFukuY;
+    document.getElementById('custom-kata').value  = cfg.customKata;
+    document.getElementById('custom-time-row').style.opacity =
+      cfg.timeMode === 'custom' ? '1' : '0.4';
+  }
+
+  function selectMode(mode) {
+    cfg.timeMode = mode;
+    renderMode();
+  }
+
+  function saveSettings() {
+    cfg.customFukuY = parseInt(document.getElementById('custom-fukuy').value) || 60;
+    cfg.customKata  = parseInt(document.getElementById('custom-kata').value)  || 30;
+    saveToStorage(cfg);
+    showBanner('✅ 設定を保存しました');
+  }
+
+  // ===== バックスイッチ =====
+  function renderBackSwitch() {
+    const tog = document.getElementById('back-toggle');
+    const box = document.getElementById('back-switch-box');
+    const msg = document.getElementById('back-switch-on-msg');
+    tog.checked = cfg.backSwitch;
+    box.classList.toggle('on', cfg.backSwitch);
+    msg.style.display = cfg.backSwitch ? 'block' : 'none';
+  }
+
+  function toggleBack() {
+    const newState = document.getElementById('back-toggle').checked;
+    if (newState && !confirm('⚠️ バックスイッチをONにしますか？\n（測定データの精度が下がります。混雑時のみ使用してください）')) {
+      document.getElementById('back-toggle').checked = false;
+      return;
+    }
+    cfg.backSwitch = newState;
+    saveToStorage(cfg);
+    renderBackSwitch();
+    showBanner(newState ? '🔴 バックスイッチをONにしました' : 'バックスイッチをOFFにしました');
+  }
+
+  // ===== データ確認 =====
+  function renderDataSummary() {
+    const records = JSON.parse(localStorage.getItem('aidock_records') || '[]');
+    document.getElementById('data-summary').innerHTML =
+      `登録済みデータ：<b>${records.length} 件</b>　／　会場数：<b>${cfg.venues.length} 件</b>`;
+    renderDataTable();
+  }
+
+  // ===== CSV出力 =====
+  const CSV_HEADERS = [
+    '受付番号','受付日時','性別','年齢','生年月日',
+    '身長(cm)','体重(kg)','メールアドレス','年齢区分','会場名',
+    '反復横跳び_回数','反復横跳び_測定時間(秒)','反復横跳びスコア',
+    '片足立ち_左(秒)','片足立ち_右(秒)','バランススコア',
+    '2ブース総合スコア','測定完了日時'
+  ];
+
+  function getFilteredRecords() {
+    const all = JSON.parse(localStorage.getItem('aidock_records') || '[]');
+    const filter = document.getElementById('csv-filter')?.value || 'all';
+    const todayStr = new Date().toLocaleDateString('ja-JP');
+
+    return all.filter(r => {
+      if (filter === 'today') {
+        const d = r.registeredAt ? new Date(r.registeredAt).toLocaleDateString('ja-JP') : '';
+        return d === todayStr;
+      }
+      if (filter === 'complete') return r.completedAt != null;
+      return true;
+    });
+  }
+
+  function recordToRow(r) {
+    const dob = (r.year && r.month && r.day)
+      ? `${r.year}/${String(r.month).padStart(2,'0')}/${String(r.day).padStart(2,'0')}`
+      : '';
+    const regAt = r.registeredAt
+      ? new Date(r.registeredAt).toLocaleString('ja-JP') : '';
+    const compAt = r.completedAt
+      ? new Date(r.completedAt).toLocaleString('ja-JP') : '';
+    return [
+      r.uid            ?? '',
+      regAt,
+      r.gender         ?? '',
+      r.age            ?? '',
+      dob,
+      r.height         ?? '',
+      r.weight         ?? '',
+      r.email          ?? '',
+      r.tier           ?? '',
+      r.venue          ?? '',
+      r.boothA_count   ?? '',
+      r.boothA_sec     ?? '',
+      r.boothA_score   ?? '',
+      r.leftHeld       ?? '',
+      r.rightHeld      ?? '',
+      r.balScore       ?? '',
+      r.combined       ?? '',
+      compAt,
+    ];
+  }
+
+  function buildCsvText(records) {
+    const escape = v => {
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = [CSV_HEADERS, ...records.map(recordToRow)];
+    return '﻿' + rows.map(r => r.map(escape).join(',')).join('\r\n');
+  }
+
+  function downloadCSV() {
+    const records = getFilteredRecords();
+    if (records.length === 0) { alert('出力するデータがありません。'); return; }
+    const csv  = buildCsvText(records);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const date = new Date().toLocaleDateString('ja-JP').replace(/\//g, '');
+    a.href     = url;
+    a.download = `からだ年齢AIドック_${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showBanner(`📥 ${records.length}件 をCSVでダウンロードしました`);
+  }
+
+  function copyCSV() {
+    const records = getFilteredRecords();
+    if (records.length === 0) { alert('出力するデータがありません。'); return; }
+    const csv = buildCsvText(records);
+    navigator.clipboard.writeText(csv)
+      .then(() => showBanner(`📋 ${records.length}件 をコピーしました`))
+      .catch(() => alert('コピーに失敗しました。ブラウザの設定をご確認ください。'));
+  }
+
+  function renderDataTable() {
+    const records = getFilteredRecords();
+    const tbody   = document.getElementById('preview-body');
+    if (!tbody) return;
+
+    if (records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:16px;color:var(--sub);">データがありません</td></tr>';
+      document.getElementById('csv-count').textContent = '';
+      return;
+    }
+
+    // 最新20件をプレビュー
+    const preview = [...records].reverse().slice(0, 20);
+    const tdStyle = 'padding:7px 8px; border-bottom:1px solid var(--border); white-space:nowrap;';
+    tbody.innerHTML = preview.map(r => {
+      const row = recordToRow(r);
+      const complete = r.completedAt ? '' : 'opacity:0.5;';
+      return `<tr style="${complete}">
+        <td style="${tdStyle} font-size:0.7rem; color:var(--sub);">${String(row[0]).slice(-8)}</td>
+        <td style="${tdStyle} font-size:0.7rem;">${row[1].slice(0,10)}</td>
+        <td style="${tdStyle} text-align:center;">${row[2]}</td>
+        <td style="${tdStyle} text-align:center;">${row[3]}</td>
+        <td style="${tdStyle} text-align:center; font-size:0.72rem;">${row[8]}</td>
+        <td style="${tdStyle} text-align:center; font-weight:700;">${row[10] !== '' ? row[10]+'回' : '—'}</td>
+        <td style="${tdStyle} text-align:center;">${row[13] !== '' ? row[13]+'秒' : '—'}</td>
+        <td style="${tdStyle} text-align:center;">${row[14] !== '' ? row[14]+'秒' : '—'}</td>
+        <td style="${tdStyle} text-align:center; font-weight:700; color:var(--primary-dark);">${row[16] !== '' ? row[16]+'点' : '—'}</td>
+        <td style="${tdStyle} font-size:0.72rem;">${row[9] || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    const total = records.length;
+    const done  = records.filter(r => r.completedAt).length;
+    document.getElementById('csv-count').textContent =
+      `${total}件中 測定完了：${done}件 / 受付のみ：${total - done}件（プレビューは最新20件）`;
+  }
+
+  // ===== PIN変更 =====
+  function changePin() {
+    const val = document.getElementById('new-pin').value.trim();
+    if (!/^\d{4}$/.test(val)) {
+      alert('4桁の数字を入力してください。');
+      return;
+    }
+    cfg.pin = val;
+    saveToStorage(cfg);
+    document.getElementById('new-pin').value = '';
+    showBanner('PINコードを変更しました');
+  }
+
+  // ===== データリセット =====
+  function clearAllData() {
+    if (!confirm('⚠️ 全ての登録データを削除しますか？\n（受付者データが全て消えます）')) return;
+    localStorage.removeItem('aidock_records');
+    renderDataSummary();
+    showBanner('データをリセットしました');
+  }
+
+  // ===== ログアウト =====
+  function logout() {
+    pinEntered = '';
+    updateDots();
+    document.getElementById('pin-error').style.display = 'none';
+    showScreen('screen-pin');
+  }
+
+  // ===== 保存バナー =====
+  function showBanner(msg) {
+    const b = document.getElementById('save-banner');
+    b.textContent = msg;
+    b.style.display = 'block';
+    b.style.animation = 'none';
+    void b.offsetWidth;
+    b.style.animation = 'slideUp 0.3s ease';
+    clearTimeout(b._timer);
+    b._timer = setTimeout(() => { b.style.display = 'none'; }, 2500);
+  }
+
+  // ===== 申込URL生成 =====
+  let _generatedUrl = '';
+
+  function generateVenueUrl() {
+    cfg = loadSettings();
+
+    if (!cfg.selectedVenue) {
+      document.getElementById('url-gen-warning').style.display = 'block';
+      alert('会場名を先に選択してください。');
+      return;
+    }
+
+    document.getElementById('url-gen-warning').style.display = 'none';
+
+    const payload = {
+      v:  cfg.selectedVenue,
+      m:  cfg.timeMode,
+      fy: cfg.customFukuY  || 60,
+      k:  cfg.customKata   || 30,
+    };
+
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const basePath = location.href.replace('admin.html', 'index.html').split('?')[0];
+    _generatedUrl = `${basePath}?c=${encoded}`;
+
+    document.getElementById('generated-url').textContent = _generatedUrl;
+    document.getElementById('url-gen-result').style.display = 'block';
+
+    const qrBox = document.getElementById('venue-qr-box');
+    qrBox.innerHTML = '';
+    new QRCode(qrBox, {
+      text:         _generatedUrl,
+      width:        200,
+      height:       200,
+      colorDark:    '#1e3a8a',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+
+    showBanner(`「${cfg.selectedVenue}」の申込URLを生成しました`);
+    qrBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function copyVenueUrl() {
+    if (!_generatedUrl) return;
+    navigator.clipboard.writeText(_generatedUrl)
+      .then(() => showBanner('URLをコピーしました'))
+      .catch(() => { prompt('以下のURLをコピーしてください：', _generatedUrl); });
+  }
+
+  function openVenueUrl() {
+    if (!_generatedUrl) return;
+    window.open(_generatedUrl, '_blank');
+  }
+
+  function printVenueQr() {
+    const qrBox = document.getElementById('venue-qr-box');
+    const canvas = qrBox.querySelector('canvas');
+    const img    = qrBox.querySelector('img');
+    const src    = canvas ? canvas.toDataURL() : (img ? img.src : '');
+    if (!src) { alert('QRコードがまだ生成されていません'); return; }
+
+    const venue = cfg.selectedVenue || '会場';
+    const win   = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>申込QR：${venue}</title>
+<style>
+  body { display:flex; flex-direction:column; align-items:center;
+         justify-content:center; min-height:100vh; font-family:sans-serif; }
+  h2  { font-size:1.4rem; margin-bottom:8px; }
+  p   { font-size:0.9rem; color:#555; margin-bottom:20px; }
+  img { width:260px; height:260px; }
+  @media print { @page { margin:0; } }
+</style></head>
+<body>
+  <h2>📋 からだ年齢 AIドック</h2>
+  <p>【${venue}】申込フォーム</p>
+  <img src="${src}" />
+  <p style="margin-top:16px; font-size:0.8rem;">QRコードを読み取って申し込んでください</p>
+</body></html>`);
+    win.document.close();
+    win.onload = () => { win.print(); };
+  }
+
+  // Enterキーで会場追加
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('venue-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addVenue();
+    });
+  });
+</script>
+</body>
+</html>

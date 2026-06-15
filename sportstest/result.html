@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>からだ年齢レポート｜AIドック</title>
+  <style>
+    :root {
+      --primary:      #6d28d9;
+      --primary-dark: #4c1d95;
+      --accent:       #10b981;
+      --danger:       #ef4444;
+      --warn:         #f59e0b;
+      --blue:         #0ea5e9;
+      --bg:           #faf5ff;
+      --card:         #ffffff;
+      --text:         #1e293b;
+      --sub:          #64748b;
+      --border:       #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+
+    /* ===== ヒーローヘッダー ===== */
+    .hero {
+      background: linear-gradient(160deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%);
+      color: white;
+      padding: 28px 20px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at top right, rgba(255,255,255,0.08) 0%, transparent 70%);
+    }
+    .hero .label { font-size: 0.78rem; opacity: 0.8; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .hero .name  { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; opacity: 0.9; }
+    .hero .age-label { font-size: 0.85rem; opacity: 0.75; margin-bottom: 4px; }
+    .hero .body-age  {
+      font-size: 5.5rem; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, #fde68a, #fbbf24);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero .age-unit { font-size: 1.5rem; font-weight: 700; opacity: 0.8; margin-top: 2px; }
+    .hero .age-diff {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.9rem; font-weight: 700;
+      padding: 5px 16px; border-radius: 999px;
+    }
+    .hero .age-diff.younger { background: rgba(16,185,129,0.25); color: #6ee7b7; }
+    .hero .age-diff.older   { background: rgba(239,68,68,0.25);  color: #fca5a5; }
+    .hero .age-diff.same    { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+    .hero .total-score {
+      margin-top: 16px;
+      font-size: 0.85rem; opacity: 0.8;
+    }
+    .hero .total-score b { font-size: 1.3rem; opacity: 1; }
+
+    /* ===== セクション共通 ===== */
+    .section { padding: 0 16px; margin: 16px 0; }
+    .card {
+      background: var(--card); border-radius: 16px;
+      padding: 20px; box-shadow: 0 2px 14px rgba(0,0,0,0.06);
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 0.88rem; font-weight: 700; color: var(--primary-dark);
+      display: flex; align-items: center; gap: 7px; margin-bottom: 14px;
+    }
+    .card-title .icon { font-size: 1.1rem; }
+
+    /* ===== スコアバー ===== */
+    .score-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .score-row:last-child { margin-bottom: 0; }
+    .score-row .name { font-size: 0.82rem; color: var(--sub); width: 88px; flex-shrink: 0; }
+    .score-row .bar-wrap {
+      flex: 1; height: 10px; background: var(--border);
+      border-radius: 999px; overflow: hidden;
+    }
+    .score-row .bar-fill {
+      height: 100%; border-radius: 999px;
+      transition: width 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .score-row .val { font-size: 0.88rem; font-weight: 700; width: 36px; text-align: right; }
+
+    /* ===== レーダーチャート ===== */
+    #radar-wrap { display: flex; justify-content: center; margin: 4px 0 12px; }
+    canvas#radar { max-width: 280px; width: 100%; }
+
+    /* ===== 2ブース比較 ===== */
+    .booth-compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+    }
+    .booth-chip {
+      border-radius: 12px; padding: 14px; text-align: center;
+    }
+    .booth-chip.a { background: #fff7ed; border: 1.5px solid #fed7aa; }
+    .booth-chip.b { background: #f5f3ff; border: 1.5px solid #ddd6fe; }
+    .booth-chip .booth-label { font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; }
+    .booth-chip.a .booth-label { color: #c2410c; }
+    .booth-chip.b .booth-label { color: #6d28d9; }
+    .booth-chip .booth-score { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+    .booth-chip.a .booth-score { color: #ea580c; }
+    .booth-chip.b .booth-score { color: #7c3aed; }
+    .booth-chip .booth-unit { font-size: 0.72rem; color: var(--sub); margin-top: 2px; }
+    .booth-chip .booth-detail { font-size: 0.75rem; color: var(--sub); margin-top: 6px; line-height: 1.5; }
+
+    /* ===== 公平換算バッジ ===== */
+    .fair-badge {
+      background: #ecfdf5; border: 1px solid #6ee7b7;
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 0.78rem; color: #065f46; line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    /* ===== 姿勢写真 ===== */
+    #posture-img {
+      width: 100%; border-radius: 12px;
+      display: none; margin-bottom: 10px;
+    }
+    .posture-placeholder {
+      background: #f1f5f9; border-radius: 12px;
+      height: 120px; display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; color: var(--sub); margin-bottom: 10px;
+    }
+
+    /* ===== アドバイスカード ===== */
+    .advice-item {
+      border-radius: 12px; padding: 14px; margin-bottom: 10px;
+      border-left: 4px solid;
+    }
+    .advice-item.bad   { background: #fef2f2; border-color: #f87171; }
+    .advice-item.mid   { background: #fffbeb; border-color: #fbbf24; }
+    .advice-item.good  { background: #ecfdf5; border-color: #34d399; }
+    .advice-item .adv-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; }
+    .advice-item.bad  .adv-title { color: #b91c1c; }
+    .advice-item.mid  .adv-title { color: #92400e; }
+    .advice-item.good .adv-title { color: #065f46; }
+    .advice-item .adv-text { font-size: 0.8rem; line-height: 1.7; color: var(--text); }
+
+    /* ===== おすすめ運動カード ===== */
+    .exercise-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .exercise-card {
+      background: #f8fafc; border-radius: 12px;
+      padding: 14px 12px; text-align: left;
+      border-left: 3px solid var(--primary);
+    }
+    .exercise-card .ex-icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
+    .exercise-card .ex-name { font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+    .exercise-card .ex-desc { font-size: 0.72rem; color: var(--sub); line-height: 1.5; }
+
+    /* ===== 過去データ比較 ===== */
+    .history-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-row .date { color: var(--sub); font-size: 0.78rem; }
+    .history-row .score-val { font-weight: 700; }
+    .trend-up   { color: var(--accent); }
+    .trend-down { color: var(--danger); }
+    .trend-flat { color: var(--sub); }
+
+    /* ===== 印刷・共有 ===== */
+    .action-row {
+      display: flex; gap: 10px; padding: 0 16px 24px;
+    }
+    .action-btn {
+      flex: 1; padding: 14px; border: none; border-radius: 12px;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .action-btn.print  { background: #1e293b; color: white; }
+    .action-btn.share  { background: linear-gradient(135deg,#6d28d9,#4c1d95); color:white; }
+    .action-btn.home   { background: var(--border); color: var(--sub); }
+
+    @media print {
+      .action-row, #no-print { display: none !important; }
+      body { background: white; }
+      .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    /* ===== ローディング ===== */
+    #loading {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      z-index: 999;
+    }
+    .loader {
+      width: 48px; height: 48px;
+      border: 5px solid #ddd6fe;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { font-size: 0.88rem; color: var(--sub); }
+  </style>
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading">
+  <div class="loader"></div>
+  <p>AIがレポートを解析中...</p>
+</div>
+
+<!-- ===== ヒーローヘッダー ===== -->
+<div class="hero" id="hero">
+  <div class="label">📊 からだ年齢 AIドック 測定結果</div>
+  <div class="name" id="hero-name"></div>
+  <div class="age-label">あなたの「からだ年齢」は</div>
+  <div class="body-age" id="body-age">—</div>
+  <div class="age-unit">歳</div>
+  <div class="age-diff" id="age-diff"></div>
+  <div class="total-score">2ブース総合スコア <b id="hero-score">—</b> 点 / 100点</div>
+</div>
+
+<div class="section">
+
+  <!-- ===== ① 2ブース比較 ===== -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🏟️</span>2ブース採点結果</div>
+
+    <div class="booth-compare">
+      <div class="booth-chip a">
+        <div class="booth-label">🏃 ブースA｜反復横跳び</div>
+        <div class="booth-score" id="score-a">—</div>
+        <div class="booth-unit">点</div>
+        <div class="booth-detail" id="detail-a"></div>
+      </div>
+      <div class="booth-chip b">
+        <div class="booth-label">🧘 ブースB｜バランス</div>
+        <div class="booth-score" id="score-b">—</div>
+        <div class="booth-unit">点</div>
+        <div class="booth-detail" id="detail-b"></div>
+      </div>
+    </div>
+
+    <div class="fair-badge" id="fair-badge"></div>
+  </div>
+
+  <!-- ===== ② 5軸レーダーチャート ===== -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span>5軸からだ分析</div>
+    <div id="radar-wrap">
+      <canvas id="radar" width="280" height="280"></canvas>
+    </div>
+    <div id="axis-bars"></div>
+  </div>
+
+  <!-- ===== ③ 姿勢写真 ===== -->
+  <div class="card" id="posture-card">
+    <div class="card-title"><span class="icon">📸</span>姿勢写真</div>
+    <img id="posture-img" alt="姿勢写真" />
+    <div class="posture-placeholder" id="posture-placeholder">
+      姿勢写真はありません
+    </div>
+    <div class="score-row" style="margin-top:10px;">
+      <span class="name">姿勢バランス</span>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-posture" style="width:0%; background:linear-gradient(90deg,#8b5cf6,#4c1d95);"></div></div>
+      <span class="val" id="val-posture">—</span>
+    </div>
+    <p id="posture-comment" style="font-size:0.8rem; color:var(--sub); margin-top:8px; line-height:1.7;"></p>
+  </div>
+
+  <!-- ===== ④ 弱点アドバイス ===== -->
+  <div class="card">
+    <div class="card-title"><span class="icon">💡</span>AIからのアドバイス</div>
+    <div id="advice-list"></div>
+  </div>
+
+  <!-- ===== ⑤ おすすめ予防運動 ===== -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🤸</span>あなたへのおすすめ運動</div>
+    <div class="exercise-grid" id="exercise-grid"></div>
+  </div>
+
+  <!-- ===== ⑥ 過去データとの比較 ===== -->
+  <div class="card" id="history-card" style="display:none;">
+    <div class="card-title"><span class="icon">📈</span>過去の測定との比較</div>
+    <div id="history-list"></div>
+  </div>
+
+</div><!-- /section -->
+
+<!-- ===== アクション ===== -->
+<div class="action-row" id="no-print">
+  <button class="action-btn print" onclick="window.print()">🖨️ 印刷</button>
+  <button class="action-btn share" onclick="shareReport()">📤 共有</button>
+  <button class="action-btn home" onclick="window.location.href='hub.html'">🏠 ハブへ</button>
+</div>
+<div style="text-align:center; padding: 0 16px 20px;">
+  <a href="index.html" style="font-size:0.8rem; color:var(--sub);">次の利用者の受付へ →</a>
+</div>
+
+<script>
+  // ===== データ読み込み =====
+  function loadData() {
+    const fin     = JSON.parse(sessionStorage.getItem('final_result') || 'null');
+    const records = JSON.parse(localStorage.getItem('aidock_records') || '[]');
+    const done    = records
+      .filter(r => r.completedAt)
+      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+    if (fin) {
+      // uid が一致する localStorage レコードとマージ
+      // localStorage 側: email・gender・height・weight・venue・生年月日など
+      // sessionStorage 側: スコア・測定結果（優先）
+      const matched = (fin.uid ? records.find(r => r.uid === fin.uid) : null) || {};
+      return { ...matched, ...fin };
+    }
+
+    // sessionStorage になければ localStorage の最新完了レコードを使用
+    return done[0] || null;
+  }
+
+  // ===== からだ年齢算出 =====
+  function calcBodyAge(data) {
+    const realAge = data.age || 40;
+    const score   = data.combined || 60;
+    // スコア70点＝実年齢と同等、10点差＝±5歳換算
+    const diff = Math.round((70 - score) / 2);
+    return Math.max(10, Math.min(99, realAge + diff));
+  }
+
+  // ===== 5軸スコア算出（公平換算済み） =====
+  function calcAxes(data) {
+    const aScore = data.boothA_score || 0;
+    const bScore = data.balScore     || 0;
+    const ls     = data.leftHeld     || 0;
+    const rs     = data.rightHeld    || 0;
+
+    // 反復横跳びを「1秒あたりのペース」に変換して公平採点
+    const count  = data.boothA_count || 0;
+    const sec    = data.boothA_sec   || 60;
+    const rps    = count / sec; // 1秒あたり回数
+
+    // 年齢区分ごとの期待値
+    const tier = data.tier || '現役世代';
+    const bench = tier === 'シニア層' ? 0.45 : tier === '熟年層' ? 0.60 : 0.75;
+    const speedRate  = Math.min(rps / bench, 1.3);
+
+    return {
+      '体幹の安定度':    clip(bScore * 0.9),
+      'スピードとキレ':  clip(speedRate * 100 * 0.95),
+      'バランス（左右）':clip(((ls + rs) / 60) * 100),
+      '重心コントロール':clip(aScore * 0.85),
+      '総合体力':        clip((aScore + bScore) / 2),
+    };
+  }
+
+  function clip(v) { return Math.round(Math.min(100, Math.max(0, v))); }
+
+  // ===== レーダーチャート描画 =====
+  function drawRadar(axes) {
+    const canvas = document.getElementById('radar');
+    const ctx    = canvas.getContext('2d');
+    const W = 280, H = 280, cx = 140, cy = 140, R = 100;
+    const labels = Object.keys(axes);
+    const values = Object.values(axes);
+    const n = labels.length;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // グリッド（5段階）
+    for (let step = 1; step <= 5; step++) {
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+        const r = (step / 5) * R;
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = step === 5 ? '#c4b5fd' : '#e2e8f0';
+      ctx.lineWidth   = step === 5 ? 1.5 : 1;
+      ctx.stroke();
+    }
+
+    // 軸線
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+      ctx.strokeStyle = '#ddd6fe';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // データ
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+      const r = (v / 100) * R;
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle   = 'rgba(109,40,217,0.18)';
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth   = 2.5;
+    ctx.fill(); ctx.stroke();
+
+    // ラベル
+    ctx.font = '11px Hiragino Kaku Gothic ProN, Meiryo, sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.textAlign = 'center';
+    labels.forEach((lbl, i) => {
+      const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+      const r = R + 24;
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a) + 4;
+      ctx.fillText(lbl, x, y);
+    });
+
+    // 点
+    values.forEach((v, i) => {
+      const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+      const r = (v / 100) * R;
+      ctx.beginPath();
+      ctx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), 4, 0, 2 * Math.PI);
+      ctx.fillStyle = '#6d28d9'; ctx.fill();
+    });
+  }
+
+  // ===== スコアバー描画 =====
+  function renderBars(axes) {
+    const colors = ['#f97316','#0ea5e9','#8b5cf6','#10b981','#f59e0b'];
+    const html = Object.entries(axes).map(([name, val], i) => `
+      <div class="score-row">
+        <span class="name">${name}</span>
+        <div class="bar-wrap">
+          <div class="bar-fill" style="width:0%; background:${colors[i]};"
+            data-w="${val}%" id="bar-ax-${i}"></div>
+        </div>
+        <span class="val" style="color:${colors[i]};">${val}</span>
+      </div>
+    `).join('');
+    document.getElementById('axis-bars').innerHTML = html;
+    setTimeout(() => {
+      Object.entries(axes).forEach(([,v], i) => {
+        document.getElementById(`bar-ax-${i}`).style.width = v + '%';
+      });
+    }, 300);
+  }
+
+  // ===== アドバイス生成 =====
+  function buildAdvice(axes, data) {
+    const items = [];
+    const ls  = data.leftHeld  || 0;
+    const rs  = data.rightHeld || 0;
+    const avg = (ls + rs) / 2;
+    const age = data.age || 40;
+
+    // ── バランス左右差 ──
+    const diff = Math.abs(ls - rs);
+    if (diff >= 10) {
+      items.push({ level:'bad', title:'⚠️ 左右バランスに大きなズレがあります',
+        text:`片足立ちの左右差が ${diff.toFixed(1)}秒 あります。利き足への体重集中が習慣化している可能性があります。弱い側の片足立ちを毎日30秒から意識的に行いましょう。` });
+    } else if (diff >= 5) {
+      items.push({ level:'mid', title:'🔶 左右バランスにやや差があります',
+        text:`片足立ちの左右差が ${diff.toFixed(1)}秒。歯磨きのついでに左右交互で片足立ちを続けると3ヶ月で改善が見込まれます。` });
+    } else {
+      items.push({ level:'good', title:'✅ 左右バランスが均等です',
+        text:`片足立ちの左右差は ${diff.toFixed(1)}秒 とほぼ均等です。このバランス感覚を継続して維持しましょう。` });
+    }
+
+    // ── バランス絶対値（年齢比較） ──
+    const ageBench = age < 40 ? 25 : age < 55 ? 18 : age < 65 ? 12 : 8;
+    if (avg < ageBench * 0.6) {
+      items.push({ level:'bad', title:'⚠️ 片足立ちが年齢基準を大きく下回っています',
+        text:`平均 ${avg.toFixed(1)}秒（目安：${ageBench}秒以上）。転倒リスクが高い状態です。壁に手を添えながら毎日片足立ちの練習を始めてください。` });
+    } else if (avg < ageBench) {
+      items.push({ level:'mid', title:'🔶 片足立ちが年齢基準を下回っています',
+        text:`平均 ${avg.toFixed(1)}秒（目安：${ageBench}秒以上）。バランス感覚の向上には日常的なつま先立ちや片足立ち練習が効果的です。` });
+    } else {
+      items.push({ level:'good', title:'✅ 片足立ちが年齢基準をクリアしています',
+        text:`平均 ${avg.toFixed(1)}秒（目安：${ageBench}秒以上）をクリアしています。このバランス能力は転倒予防に大きく貢献しています。` });
+    }
+
+    // ── 体幹スコア ──
+    const core = axes['体幹の安定度'] || 0;
+    if (core < 50) {
+      items.push({ level:'bad', title:'⚠️ 体幹が弱い可能性があります',
+        text:`体幹スコア ${core}点。体幹を鍛えることでバランスと反復横跳びの両方が改善されます。プランク（腕立て伏せの姿勢でキープ）を20秒から始めましょう。` });
+    } else if (core < 75) {
+      items.push({ level:'mid', title:'🔶 体幹をもう少し鍛えましょう',
+        text:`体幹スコア ${core}点。毎日のコアトレーニング（プランク・ドローイン）を継続すると半年後に大きな変化が出ます。` });
+    } else {
+      items.push({ level:'good', title:'✅ 体幹が安定しています',
+        text:`体幹スコア ${core}点。良好な体幹安定性が確認できました。姿勢維持と怪我予防にも役立っています。` });
+    }
+
+    // ── スピード・俊敏性 ──
+    const speed = axes['スピードとキレ'] || 0;
+    if (speed < 40) {
+      items.push({ level:'bad', title:'⚠️ 俊敏性が低下しています',
+        text:`俊敏性スコア ${speed}点。反復横跳びの速度が年齢基準を大幅に下回っています。足踏みやラダートレーニング（床に目印をつけてステップ練習）からおすすめします。` });
+    } else if (speed < 65) {
+      items.push({ level:'mid', title:'🔶 俊敏性・スピードの向上余地があります',
+        text:`俊敏性スコア ${speed}点。素早い方向転換の練習（ラダートレーニングや縄跳び）を週2〜3回行うと3ヶ月で改善が見込まれます。` });
+    } else {
+      items.push({ level:'good', title:'✅ 俊敏性・スピードが良好です',
+        text:`俊敏性スコア ${speed}点。素早い動きと方向転換能力が維持されています。ウォーミングアップを丁寧に行い怪我を防ぎましょう。` });
+    }
+
+    // ── 重心コントロール ──
+    const grav = axes['重心コントロール'] || 0;
+    if (grav < 50) {
+      items.push({ level:'bad', title:'⚠️ 重心のコントロールが不安定です',
+        text:`重心コントロールスコア ${grav}点。重心がブレやすく、動作の正確さに影響が出ている可能性があります。スロースクワット（5秒かけてゆっくり降りる）が有効です。` });
+    } else if (grav < 70) {
+      items.push({ level:'mid', title:'🔶 重心のコントロールに改善余地があります',
+        text:`重心コントロールスコア ${grav}点。片足スクワットやバランスボードを使った練習で安定性が向上します。` });
+    }
+
+    // ── 姿勢・あご上がり ──
+    const posture = axes['あご上がり'] || 0;
+    if (posture < 50) {
+      items.push({ level:'bad', title:'⚠️ 姿勢の乱れが見られます',
+        text:`姿勢スコア ${posture}点。頭部が前に出た「前傾姿勢」の傾向が見られます。スマホ・PC作業後に意識して肩甲骨を寄せるストレッチを行いましょう。` });
+    } else if (posture < 75) {
+      items.push({ level:'mid', title:'🔶 姿勢をもう少し整えましょう',
+        text:`姿勢スコア ${posture}点。毎朝胸を開く体操（壁を背にして両腕を広げる）を1分続けるだけで改善が見込まれます。` });
+    }
+
+    // ── 総合コメント ──
+    const combined = data.combined || data.boothA_score || data.balScore || 0;
+    if (combined >= 80) {
+      items.push({ level:'good', title:'✅ 総合的に非常に良好です！',
+        text:`総合スコア ${combined}点。身体機能が高いレベルで維持されています。この状態を維持するために、定期的な運動と十分な睡眠・栄養を心がけてください。` });
+    } else if (combined >= 65) {
+      items.push({ level:'good', title:'✅ 総合的に良好な状態です',
+        text:`総合スコア ${combined}点。基本的な身体機能は維持されています。弱点を意識した運動習慣を取り入れることでさらに向上が期待できます。` });
+    } else if (combined < 45) {
+      items.push({ level:'bad', title:'⚠️ 早めの運動習慣の見直しをおすすめします',
+        text:`総合スコア ${combined}点。日常生活での活動量が少ない可能性があります。まずは毎日10分のウォーキングから始めてみましょう。` });
+    }
+
+    return items;
+  }
+
+  // ===== おすすめ運動 =====
+  const EXERCISES = {
+    片足立ち:       { icon:'🦵', desc:'歯磨き中に左右30秒ずつ。転倒予防・バランス感覚の向上に。' },
+    スロースクワット:{ icon:'🏋️', desc:'5秒かけてゆっくり降りる。1日10〜20回で下半身と体幹を強化。' },
+    プランク:       { icon:'💪', desc:'肘をついた腹筋キープ。20秒から始めて体幹を集中トレーニング。' },
+    ウォーキング:   { icon:'🚶', desc:'1日30分・週3回以上。心肺機能と骨密度の向上に効果的。' },
+    ストレッチ:     { icon:'🙆', desc:'毎朝5分、肩・首・股関節をほぐす。姿勢と可動域が改善。' },
+    ラダートレーニング:{ icon:'⚡', desc:'床に目印をつけてステップ練習。俊敏性とキレが向上。' },
+    肩甲骨体操:     { icon:'🤸', desc:'壁を背に両腕を広げる。前傾姿勢・巻き肩の改善に効果的。' },
+    つま先立ち:     { icon:'👟', desc:'踵を上げて3秒キープを繰り返す。ふくらはぎと重心感覚を鍛える。' },
+  };
+
+  function renderExercises(axes, data) {
+    const ls     = data.leftHeld || 0, rs = data.rightHeld || 0;
+    const avgBal = (ls + rs) / 2;
+    const speed  = axes['スピードとキレ']   || 0;
+    const core   = axes['体幹の安定度']     || 0;
+    const grav   = axes['重心コントロール'] || 0;
+    const posture= axes['あご上がり']       || 0;
+
+    const picks = [];
+    if (avgBal < 15)  picks.push('片足立ち');
+    if (grav < 60)    picks.push('つま先立ち');
+    if (core < 70)    picks.push('プランク');
+    if (core < 55)    picks.push('スロースクワット');
+    if (speed < 55)   picks.push('ラダートレーニング');
+    if (speed < 70)   picks.push('ウォーキング');
+    if (posture < 65) picks.push('肩甲骨体操');
+    picks.push('ストレッチ');
+    const show = [...new Set(picks)].slice(0, 4);
+
+    document.getElementById('exercise-grid').innerHTML = show.map(name => {
+      const ex = EXERCISES[name];
+      return `<div class="exercise-card">
+        <span class="ex-icon">${ex.icon}</span>
+        <div class="ex-name">${name}</div>
+        <div class="ex-desc">${ex.desc}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ===== 過去データ比較 =====
+  function renderHistory(current) {
+    const records = JSON.parse(localStorage.getItem('aidock_records') || '[]');
+    const key = current.email || '';
+
+    // email が一致する過去レコードを取得（email がなければ表示しない）
+    const past = key
+      ? records
+          .filter(r => r.combined && r.email === key && r.completedAt)
+          .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+          .slice(0, 5)
+      : [];
+
+    if (past.length <= 1) return;
+
+    document.getElementById('history-card').style.display = 'block';
+    const html = past.map((r, i) => {
+      const date = new Date(r.completedAt).toLocaleDateString('ja-JP');
+      const score = r.combined;
+      const prev  = past[i + 1];
+      let trend = '';
+      if (prev) {
+        const d = score - prev.combined;
+        trend = d > 0 ? `<span class="trend-up">▲${d}点</span>` :
+                d < 0 ? `<span class="trend-down">▼${Math.abs(d)}点</span>` :
+                `<span class="trend-flat">→ 変化なし</span>`;
+      }
+      return `<div class="history-row">
+        <span class="date">${date}${i === 0 ? '（今回）' : ''}</span>
+        <span class="score-val">${score}点 ${trend}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('history-list').innerHTML = html;
+  }
+
+  // ===== メイン描画 =====
+  function build(data) {
+    const bodyAge  = calcBodyAge(data);
+    const realAge  = data.age  || 0;
+    const combined = data.combined || 0;
+    const axes     = calcAxes(data);
+
+    // ヒーロー
+    document.getElementById('hero-name').textContent =
+      data.email ? `${data.email} 様` : '';
+    document.getElementById('body-age').textContent  = bodyAge;
+    document.getElementById('hero-score').textContent = combined;
+
+    const ageDiff = realAge - bodyAge;
+    const diffEl  = document.getElementById('age-diff');
+    if (ageDiff > 0) {
+      diffEl.textContent = `実年齢より ${ageDiff}歳 若い！`;
+      diffEl.className   = 'age-diff younger';
+    } else if (ageDiff < 0) {
+      diffEl.textContent = `実年齢より ${Math.abs(ageDiff)}歳 年上の数値`;
+      diffEl.className   = 'age-diff older';
+    } else {
+      diffEl.textContent = `実年齢（${realAge}歳）と同等`;
+      diffEl.className   = 'age-diff same';
+    }
+
+    // ブース比較
+    const aScore = data.boothA_score || 0;
+    const bScore = data.balScore     || 0;
+    document.getElementById('score-a').textContent  = aScore;
+    document.getElementById('score-b').textContent  = bScore;
+    document.getElementById('detail-a').textContent =
+      data.boothA_count != null
+        ? `${data.boothA_count}回 ／ ${data.boothA_sec}秒測定`
+        : '測定データなし';
+    document.getElementById('detail-b').textContent =
+      `左${data.leftHeld ?? '—'}秒 ／ 右${data.rightHeld ?? '—'}秒`;
+
+    // 公平換算バッジ
+    const sec  = data.boothA_sec || 60;
+    const cnt  = data.boothA_count || 0;
+    const rps  = sec > 0 ? (cnt / sec).toFixed(2) : '—';
+    document.getElementById('fair-badge').innerHTML =
+      `⚖️ <b>公平換算済みスコア</b>　反復横跳びの測定時間（${sec}秒）を「1秒あたり ${rps} 回」に換算し、20秒・40秒・60秒の測定者すべてを100点満点で公平に比較しています。`;
+
+    // レーダー＋バー
+    drawRadar(axes);
+    renderBars(axes);
+
+    // 姿勢写真
+    const photoUrl = data.photoUrl || sessionStorage.getItem('posture_photo');
+    if (photoUrl) {
+      document.getElementById('posture-img').src = photoUrl;
+      document.getElementById('posture-img').style.display = 'block';
+      document.getElementById('posture-placeholder').style.display = 'none';
+    }
+    const avgBal = ((data.leftHeld || 0) + (data.rightHeld || 0)) / 2;
+    const postureScore = Math.round(Math.min(100, (avgBal / 30) * 100));
+    setTimeout(() => {
+      document.getElementById('bar-posture').style.width = postureScore + '%';
+    }, 400);
+    document.getElementById('val-posture').textContent = postureScore + '点';
+    document.getElementById('posture-comment').textContent =
+      postureScore >= 80 ? '姿勢・バランスともに良好です。引き続き維持してください。' :
+      postureScore >= 55 ? '姿勢にやや改善の余地があります。体幹トレーニングで改善が期待できます。' :
+      '姿勢・バランスの改善が必要です。下のおすすめ運動を継続して取り組みましょう。';
+
+    // アドバイス
+    const advice = buildAdvice(axes, data);
+    document.getElementById('advice-list').innerHTML = advice.map(a => `
+      <div class="advice-item ${a.level}">
+        <div class="adv-title">${a.title}</div>
+        <div class="adv-text">${a.text}</div>
+      </div>
+    `).join('');
+
+    // おすすめ運動
+    renderExercises(axes, data);
+
+    // 過去比較
+    renderHistory(data);
+
+    // ローディング非表示
+    document.getElementById('loading').style.display = 'none';
+  }
+
+  // ===== 共有 =====
+  function shareReport() {
+    const text = `からだ年齢 AIドック 測定結果\nからだ年齢：${document.getElementById('body-age').textContent}歳\n総合スコア：${document.getElementById('hero-score').textContent}点`;
+    if (navigator.share) {
+      navigator.share({ title: 'からだ年齢 AIドック', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => alert('結果テキストをコピーしました！'));
+    }
+  }
+
+  // ===== 起動 =====
+  window.addEventListener('DOMContentLoaded', () => {
+    const data = loadData();
+    if (!data) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('hero').innerHTML =
+        '<div style="padding:40px;text-align:center;opacity:0.7;">測定データがありません。<br>受付からやり直してください。<br><br><a href="index.html" style="color:#c4b5fd;">← 受付画面へ</a></div>';
+      return;
+    }
+    // 少し遅らせてアニメーションを見せる
+    setTimeout(() => build(data), 800);
+  });
+</script>
+</body>
+</html>

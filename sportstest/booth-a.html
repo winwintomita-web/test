@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ブースA｜反復横跳び測定</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --accent:  #10b981;
+      --danger:  #ef4444;
+      --bg:      #fff7ed;
+      --card:    #ffffff;
+      --text:    #1e293b;
+      --sub:     #64748b;
+      --border:  #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: white;
+      padding: 14px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1rem; font-weight: 700; }
+    header p  { font-size: 0.72rem; opacity: 0.85; margin-top: 2px; }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border-radius: 16px;
+      margin: 16px 20px;
+      padding: 28px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 8px;
+    }
+    .card .sub {
+      font-size: 0.8rem;
+      color: var(--sub);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.03em;
+      margin-bottom: 10px;
+    }
+    .btn:last-child { margin-bottom: 0; }
+    .btn-primary {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: white;
+      box-shadow: 0 4px 12px rgba(249,115,22,0.35);
+    }
+    .btn-primary:hover  { transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      background: var(--border);
+      color: var(--sub);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.35);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239,68,68,0.35);
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* QRスキャナー */
+    #qr-reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    #qr-reader video { border-radius: 12px; }
+
+    .or-divider {
+      text-align: center;
+      color: var(--sub);
+      font-size: 0.8rem;
+      margin: 14px 0;
+      position: relative;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 42%;
+      height: 1px;
+      background: var(--border);
+    }
+    .or-divider::before { left: 0; }
+    .or-divider::after  { right: 0; }
+
+    textarea {
+      width: 100%;
+      height: 80px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      font-family: monospace;
+      color: var(--sub);
+      resize: none;
+      outline: none;
+    }
+    textarea:focus { border-color: var(--primary); }
+
+    /* ユーザー情報バッジ */
+    .user-badge {
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .user-badge .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      padding: 5px 0;
+      border-bottom: 1px solid #fde8cc;
+    }
+    .user-badge .row:last-child { border-bottom: none; }
+    .user-badge .row span:first-child { color: var(--sub); }
+    .user-badge .row span:last-child  { font-weight: 700; }
+
+    /* タイマーバッジ */
+    .time-badge {
+      background: #fef3c7;
+      border: 2px solid #fde047;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .time-badge .tier { font-size: 0.82rem; color: #92400e; margin-bottom: 4px; }
+    .time-badge .secs { font-size: 2.2rem; font-weight: 900; color: #d97706; line-height: 1; }
+    .time-badge .unit { font-size: 0.85rem; color: #b45309; }
+
+    /* カウントダウン画面 */
+    .countdown-number {
+      font-size: 8rem;
+      font-weight: 900;
+      text-align: center;
+      color: var(--primary);
+      line-height: 1;
+      margin: 30px 0;
+      animation: pulse 0.8s ease infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.08); }
+    }
+    .countdown-label {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--sub);
+      margin-bottom: 10px;
+    }
+
+    /* 測定画面 */
+    .timer-ring {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 20px;
+    }
+    .timer-ring svg { transform: rotate(-90deg); }
+    .timer-ring .ring-bg { fill: none; stroke: #fed7aa; stroke-width: 12; }
+    .timer-ring .ring-fg { fill: none; stroke: var(--primary); stroke-width: 12;
+      stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+    .timer-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-seconds {
+      font-size: 3.8rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1;
+    }
+    .timer-unit { font-size: 0.9rem; color: var(--sub); }
+
+    .count-btn {
+      width: 100%;
+      height: 90px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .count-btn:active { transform: scale(0.96); }
+
+    .status-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .status-chip {
+      flex: 1;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--sub);
+    }
+    .status-chip b { display: block; font-size: 1.4rem; color: var(--text); margin-bottom: 2px; }
+
+    /* 結果画面 */
+    .result-count {
+      text-align: center;
+      margin: 16px 0 20px;
+    }
+    .result-count .label { font-size: 0.9rem; color: var(--sub); margin-bottom: 4px; }
+    .result-count .num   { font-size: 5rem; font-weight: 900; color: var(--primary-dark); line-height: 1; }
+    .result-count .unit2 { font-size: 1rem; color: var(--sub); margin-top: 4px; }
+
+    .axis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .axis-item {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .axis-item .name { font-size: 0.75rem; color: var(--sub); margin-bottom: 6px; }
+    .axis-item .score-bar {
+      height: 8px;
+      border-radius: 9999px;
+      background: var(--border);
+      margin-bottom: 4px;
+      overflow: hidden;
+    }
+    .axis-item .score-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #f97316, #ea580c);
+      transition: width 1s ease;
+    }
+    .axis-item .score-val { font-size: 1rem; font-weight: 700; color: var(--primary-dark); }
+    .axis-item.wide { grid-column: span 2; }
+
+    .result-note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #7c2d12;
+      margin-bottom: 20px;
+    }
+
+    .error-msg {
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    /* ビープ状態インジケーター */
+    .beep-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--sub);
+      margin-bottom: 14px;
+    }
+    .beep-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.1s, transform 0.1s;
+    }
+    .beep-dot.flash {
+      background: var(--primary);
+      transform: scale(1.4);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏃 ブースA｜反復横跳び測定</h1>
+  <p>心肺・俊敏性ドック</p>
+</header>
+
+<!-- ===== 画面1：スタート ===== -->
+<div class="card screen active fade-in" id="screen-start">
+  <h2>📲 QRコードを読み込む</h2>
+  <p class="sub">受付で発行されたQRコードをカメラにかざしてください。<br>カメラが使えない場合はQRデータを直接貼り付けることもできます。</p>
+
+  <button class="btn btn-primary" onclick="startQrScan()">📷 カメラでQRスキャン</button>
+
+  <div class="or-divider">または</div>
+
+  <p style="font-size:0.8rem; color:var(--sub); margin-bottom:6px;">QRコードデータを貼り付け（テスト用）</p>
+  <textarea id="manual-qr" placeholder='{"id":"AID-XXX","age":35,"tier":"現役世代","fukuY":60,...}'></textarea>
+  <div class="error-msg" id="qr-error">⚠️ QRコードのデータが正しくありません。受付で発行されたQRコードを使用してください。</div>
+  <button class="btn btn-secondary" style="margin-top:10px;" onclick="parseManualQr()">このデータで進む</button>
+</div>
+
+<!-- ===== 画面2：QRスキャナー ===== -->
+<div class="card screen fade-in" id="screen-scan">
+  <h2>📷 QRコードをかざしてください</h2>
+  <p class="sub">画面内の枠にQRコードが入るように向けてください。</p>
+  <div id="qr-reader"></div>
+  <button class="btn btn-secondary" onclick="stopScan()">← キャンセル</button>
+</div>
+
+<!-- ===== 画面3：ユーザー確認・準備 ===== -->
+<div class="card screen fade-in" id="screen-ready">
+  <h2>✅ 利用者の確認</h2>
+  <p class="sub">内容を確認して「測定を開始する」を押してください。</p>
+
+  <div class="user-badge" id="ready-user-info"></div>
+
+  <!-- 管理者設定モードバッジ -->
+  <div id="mode-badge" style="display:none; background:#eff6ff; border:1.5px solid #93c5fd;
+    border-radius:10px; padding:9px 13px; font-size:0.8rem; font-weight:700;
+    color:#1d4ed8; margin-bottom:10px;"></div>
+
+  <!-- バックスイッチ警告 -->
+  <div id="back-warning" style="display:none; background:#fef9c3; border:1.5px solid #fde047;
+    border-radius:10px; padding:9px 13px; font-size:0.8rem; font-weight:700;
+    color:#713f12; margin-bottom:10px;">
+    ⚡ プランCモード（バックスイッチON）で動作中
+  </div>
+
+  <div class="time-badge">
+    <div class="tier" id="ready-tier-label"></div>
+    <div class="secs" id="ready-secs"></div>
+    <div class="unit">秒間の測定</div>
+  </div>
+
+  <div style="background:#e0f2fe; border-radius:10px; padding:14px; font-size:0.82rem; line-height:1.8; color:#0369a1; margin-bottom:20px;">
+    ⚠️ <b>スタッフの方へ</b><br>
+    ・3本線のライン設置を確認してください<br>
+    ・利用者が中央ラインに立ったことを確認してから開始してください<br>
+    ・測定中は「ピピッ」のテンポ音が流れます
+  </div>
+
+  <button class="btn btn-primary" onclick="startCountdown()">🚀 測定を開始する</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-start')">← QR読み直す</button>
+</div>
+
+<!-- ===== 画面4：カウントダウン ===== -->
+<div class="card screen fade-in" id="screen-countdown">
+  <div class="countdown-label">測定まであと…</div>
+  <div class="countdown-number" id="cd-number">3</div>
+  <p style="text-align:center; font-size:0.9rem; color:var(--sub);">中央ラインに立って準備してください</p>
+</div>
+
+<!-- ===== 画面5：測定中 ===== -->
+<div class="card screen fade-in" id="screen-measure">
+  <h2 style="text-align:center; margin-bottom:16px;">🏃 測定中</h2>
+
+  <div class="beep-indicator">
+    <div class="beep-dot" id="beep-dot-1"></div>
+    <div class="beep-dot" id="beep-dot-2"></div>
+    <span>テンポ音 鳴動中</span>
+    <div class="beep-dot" id="beep-dot-3"></div>
+    <div class="beep-dot" id="beep-dot-4"></div>
+  </div>
+
+  <!-- タイマーリング -->
+  <div class="timer-ring">
+    <svg viewBox="0 0 220 220" width="220" height="220">
+      <circle class="ring-bg" cx="110" cy="110" r="96" />
+      <circle class="ring-fg" id="ring-fg" cx="110" cy="110" r="96"
+        stroke-dasharray="603.2" stroke-dashoffset="0" />
+    </svg>
+    <div class="timer-center">
+      <div class="timer-seconds" id="timer-display">60</div>
+      <div class="timer-unit">秒</div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-chip">
+      <b id="count-display" style="color:var(--primary)">－</b>
+      タップ回数
+    </div>
+    <div class="status-chip">
+      <b id="tier-display">－</b>
+      年齢区分
+    </div>
+    <div class="status-chip" id="mode-chip" style="display:none;">
+      <b id="mode-chip-label">標準</b>
+      モード
+    </div>
+  </div>
+
+  <!-- バックスイッチ動作中バナー -->
+  <div id="back-banner-measure" style="display:none; background:#fef9c3;
+    border-radius:8px; padding:8px 12px; font-size:0.78rem; font-weight:700;
+    color:#713f12; text-align:center; margin-bottom:10px;">
+    ⚡ プランCモード動作中
+  </div>
+
+  <button class="count-btn" id="count-btn" onclick="addCount()">
+    ← タップしてカウント →<br>
+    <span style="font-size:0.8rem; font-weight:400; opacity:0.7;">（ラインを踏むたびにタップ）</span>
+  </button>
+
+  <button class="btn btn-danger" onclick="if(confirm('測定を中断しますか？')) abortMeasure()">
+    測定を中断する
+  </button>
+</div>
+
+<!-- ===== 画面6：結果 ===== -->
+<div class="card screen fade-in" id="screen-result">
+  <h2>📊 測定結果</h2>
+  <p class="sub" id="result-sub"></p>
+
+  <div class="result-count">
+    <div class="label">合計カウント（反復横跳び）</div>
+    <div class="num" id="result-count-num">—</div>
+    <div class="unit2">回 ／ <span id="result-secs-label">60</span>秒</div>
+  </div>
+
+  <p style="font-size:0.85rem; font-weight:700; color:var(--sub); margin-bottom:10px;">🏅 5大採点（AIシミュレーション）</p>
+  <div class="axis-grid" id="axis-grid"></div>
+
+  <div class="result-note" id="result-note"></div>
+
+  <button class="btn btn-success" onclick="goBoothB()">ブースBへ進む →</button>
+  <button class="btn btn-secondary" onclick="resetAll()">最初に戻る（次の利用者）</button>
+</div>
+
+<script>
+  // ===== 状態 =====
+  let userData   = null;
+  let measureSec = 60;
+  let timeLeft   = 60;
+  let count      = 0;
+  let timerInterval  = null;
+  let beepInterval   = null;
+  let audioCtx   = null;
+  let qrScanner  = null;
+  let totalCircumference = 2 * Math.PI * 96; // ≈ 603.2
+
+  // ===== 画面切り替え =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    el.classList.remove('fade-in');
+    void el.offsetWidth;
+    el.classList.add('fade-in');
+    window.scrollTo(0, 0);
+  }
+
+  // ===== Web Audio API でビープ音 =====
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  function playBeep(freq = 880, duration = 0.06, gain = 0.4) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gainNode.gain.setValueAtTime(gain, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function playPipit() {
+    // 「ピピッ」= 高音2連打
+    playBeep(1200, 0.07, 0.3);
+    setTimeout(() => playBeep(1200, 0.07, 0.3), 100);
+  }
+
+  // ===== QRスキャン =====
+  function startQrScan() {
+    showScreen('screen-scan');
+    qrScanner = new Html5Qrcode('qr-reader');
+    qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (text) => {
+        qrScanner.stop().then(() => {
+          parseQrText(text);
+        });
+      },
+      (err) => {}
+    ).catch(err => {
+      alert('カメラが使用できません。QRデータを直接貼り付けてください。');
+      showScreen('screen-start');
+    });
+  }
+
+  function stopScan() {
+    if (qrScanner) {
+      qrScanner.stop().catch(() => {});
+      qrScanner = null;
+    }
+    showScreen('screen-start');
+  }
+
+  function parseManualQr() {
+    const text = document.getElementById('manual-qr').value.trim();
+    parseQrText(text);
+  }
+
+  function parseQrText(text) {
+    const errEl = document.getElementById('qr-error');
+    try {
+      const raw = JSON.parse(text);
+      if (!raw.age) throw new Error('invalid');
+      const GENDER = { M: '男性', F: '女性' };
+      const TIER   = ['現役世代', '熟年層', 'シニア層'];
+      const data = {
+        id:     raw.id,
+        email:  raw.em  || raw.email || raw.name || '',
+        gender: GENDER[raw.g] || raw.gender || '',
+        age:    raw.age,
+        height: raw.ht  || raw.height || '',
+        weight: raw.wt  || raw.weight || '',
+        tier:   (raw.t != null ? TIER[raw.t] : null) || raw.tier || '',
+        fukuY:  raw.fy  ?? raw.fukuY,
+        kata:   raw.k   ?? raw.kata,
+      };
+      if (!data.tier) throw new Error('invalid');
+      errEl.style.display = 'none';
+      userData = data;
+      setupReady();
+    } catch(e) {
+      errEl.style.display = 'block';
+      showScreen('screen-start');
+    }
+  }
+
+  // ===== 受付番号でデモデータ生成（テスト用） =====
+  function demoUser(age, tier, fukuY) {
+    userData = { id: 'DEMO', age, tier, fukuY, gender: '男性',
+      height: 170, weight: 65, email: 'demo@example.com' };
+  }
+
+  // ===== 準備画面セットアップ =====
+  function setupReady() {
+    const u = userData;
+
+    // ── 管理者設定を読み込んで測定時間を決定 ──
+    const cfg      = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
+    const timeMode = cfg.timeMode || 'auto';
+    const backOn   = cfg.backSwitch || false;
+
+    let modeLabel = '';
+    if (timeMode === 'standard') {
+      measureSec = 60;
+      modeLabel  = `⏱️ 標準モード（全年齢一律 ${measureSec}秒）`;
+    } else if (timeMode === 'custom') {
+      measureSec = parseInt(cfg.customFukuY) || 60;
+      modeLabel  = `⏱️ カスタムモード（管理者設定：${measureSec}秒）`;
+    } else {
+      // auto：QRコードの年齢区分をそのまま使用
+      measureSec = u.fukuY || 60;
+      modeLabel  = `⏱️ 自動年齢切替（${u.tier} → ${measureSec}秒）`;
+    }
+
+    // モードバッジ表示
+    const badge = document.getElementById('mode-badge');
+    badge.textContent   = modeLabel;
+    badge.style.display = 'block';
+
+    // バックスイッチ警告
+    document.getElementById('back-warning').style.display = backOn ? 'block' : 'none';
+
+    // ユーザー情報
+    document.getElementById('ready-user-info').innerHTML = `
+      <div class="row"><span>受付ID</span><span>${u.id || '—'}</span></div>
+      <div class="row"><span>性別</span><span>${u.gender || '—'}</span></div>
+      <div class="row"><span>年齢</span><span>${u.age} 歳（${u.tier}）</span></div>
+      <div class="row"><span>身長 / 体重</span><span>${u.height}cm / ${u.weight}kg</span></div>
+    `;
+    document.getElementById('ready-tier-label').textContent = modeLabel;
+    document.getElementById('ready-secs').textContent = measureSec;
+
+    showScreen('screen-ready');
+  }
+
+  // ===== カウントダウン =====
+  function startCountdown() {
+    initAudio();
+    showScreen('screen-countdown');
+    let cd = 3;
+    document.getElementById('cd-number').textContent = cd;
+    playBeep(660, 0.15);
+
+    const interval = setInterval(() => {
+      cd--;
+      if (cd <= 0) {
+        clearInterval(interval);
+        document.getElementById('cd-number').textContent = 'GO!';
+        playBeep(1100, 0.25, 0.6);
+        setTimeout(startMeasure, 700);
+      } else {
+        document.getElementById('cd-number').textContent = cd;
+        playBeep(660, 0.15);
+      }
+    }, 1000);
+  }
+
+  // ===== 測定開始 =====
+  function startMeasure() {
+    count    = 0;
+    timeLeft = measureSec;
+    const circumference = totalCircumference;
+
+    document.getElementById('timer-display').textContent = timeLeft;
+    document.getElementById('tier-display').textContent  = userData.tier;
+    document.getElementById('count-display').textContent = '0';
+    document.getElementById('ring-fg').style.strokeDashoffset = '0';
+    document.getElementById('result-secs-label').textContent = measureSec;
+
+    // 管理者モード・バックスイッチを測定中画面にも表示
+    const cfgM    = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
+    const modeMLabel = { auto:'自動', custom:'カスタム', standard:'標準' }[cfgM.timeMode || 'auto'];
+    const modeChip   = document.getElementById('mode-chip');
+    if ((cfgM.timeMode || 'auto') !== 'auto') {
+      document.getElementById('mode-chip-label').textContent = modeMLabel;
+      modeChip.style.display = 'flex';
+    }
+    document.getElementById('back-banner-measure').style.display =
+      cfgM.backSwitch ? 'block' : 'none';
+
+    showScreen('screen-measure');
+
+    // タイマー
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('timer-display').textContent = timeLeft;
+      const progress = (measureSec - timeLeft) / measureSec;
+      document.getElementById('ring-fg').style.strokeDashoffset =
+        circumference * progress;
+
+      if (timeLeft <= 0) finishMeasure();
+    }, 1000);
+
+    // ビープ（0.5秒ごとにピピッ）
+    let beepPhase = 0;
+    const dots = ['beep-dot-1','beep-dot-2','beep-dot-3','beep-dot-4'];
+    beepInterval = setInterval(() => {
+      playPipit();
+      // インジケーター点滅
+      dots.forEach(d => document.getElementById(d).classList.remove('flash'));
+      document.getElementById(dots[beepPhase % 4]).classList.add('flash');
+      beepPhase++;
+    }, 500);
+  }
+
+  // ===== カウントタップ =====
+  function addCount() {
+    if (timeLeft <= 0) return;
+    count++;
+    // カウントは測定中は表示しない（仕様通り）
+    // スタッフ向けに小さく現在数を見せる
+    document.getElementById('count-display').textContent = count;
+  }
+
+  // ===== 測定終了 =====
+  function finishMeasure() {
+    clearInterval(timerInterval);
+    clearInterval(beepInterval);
+
+    // 終了音（低音→高音）
+    playBeep(440, 0.2, 0.5);
+    setTimeout(() => playBeep(880, 0.3, 0.5), 220);
+    setTimeout(() => playBeep(1320, 0.4, 0.5), 440);
+
+    // ドットリセット
+    ['beep-dot-1','beep-dot-2','beep-dot-3','beep-dot-4']
+      .forEach(d => document.getElementById(d).classList.remove('flash'));
+
+    buildResult();
+    showScreen('screen-result');
+  }
+
+  function abortMeasure() {
+    clearInterval(timerInterval);
+    clearInterval(beepInterval);
+    ['beep-dot-1','beep-dot-2','beep-dot-3','beep-dot-4']
+      .forEach(d => document.getElementById(d).classList.remove('flash'));
+    resetAll();
+  }
+
+  // ===== 結果生成 =====
+  function buildResult() {
+    const u = userData;
+    const sec  = measureSec;
+
+    // 1秒あたりの回数に換算（異なる測定時間でも公平に比較）
+    const ratePerSec = count / sec;
+
+    // 年齢別の基準（1秒あたり期待値）
+    const benchmarks = {
+      '現役世代': 0.75,
+      '熟年層':   0.60,
+      'シニア層': 0.45,
+    };
+    const bench = benchmarks[u.tier] || 0.65;
+    const perf = Math.min(ratePerSec / bench, 1.3);
+
+    // 5軸スコア（カウントと測定時間から算出）
+    const scores = {
+      '体幹の安定度':    Math.round(Math.min(perf * 0.9 * 100, 100)),
+      'スピードとキレ':  Math.round(Math.min(perf * 1.0 * 100, 100)),
+      'あご上がり':      Math.round(Math.min((0.5 + perf * 0.5) * 100, 100)),
+      '重心コントロール':Math.round(Math.min(perf * 0.85 * 100, 100)),
+    };
+    const total = Math.round(Math.min(perf * 100, 100));
+
+    document.getElementById('result-count-num').textContent = count;
+    document.getElementById('result-sub').textContent =
+      `${u.tier}（${u.age}歳）の測定が完了しました。`;
+
+    const grid = document.getElementById('axis-grid');
+    grid.innerHTML = Object.entries(scores).map(([name, val]) => `
+      <div class="axis-item">
+        <div class="name">${name}</div>
+        <div class="score-bar"><div class="score-fill" style="width:0%" data-w="${val}%"></div></div>
+        <div class="score-val">${val}点</div>
+      </div>
+    `).join('') + `
+      <div class="axis-item wide">
+        <div class="name">⑤ 合計スコア（カウント換算）</div>
+        <div class="score-bar"><div class="score-fill" style="width:0%" data-w="${total}%"></div></div>
+        <div class="score-val">${total}点</div>
+      </div>
+    `;
+
+    // スコアバーをアニメーション
+    setTimeout(() => {
+      grid.querySelectorAll('.score-fill').forEach(el => {
+        el.style.width = el.dataset.w;
+      });
+    }, 100);
+
+    // コメント
+    const level = total >= 85 ? '優秀' : total >= 65 ? '良好' : total >= 45 ? '普通' : '要改善';
+    document.getElementById('result-note').innerHTML =
+      `📝 <b>AI採点コメント</b>（シミュレーション）<br>
+      総合評価：<b>${level}</b>（${total}点）<br>
+      1秒あたり ${ratePerSec.toFixed(2)} 回のペース。
+      ${total >= 80 ? 'キレのある動きが記録されました！ブースBでもこの調子で！' :
+        total >= 60 ? '安定した動きが確認できました。ブースBへ進みましょう。' :
+        'バランスや重心に改善の余地があります。ブースBでの測定も重要です。'}`;
+
+    // 次のブースへのデータをsessionStorageに保存
+    // ※ QRコードでは email が name フィールドに格納されている
+    sessionStorage.setItem('boothA_result', JSON.stringify({
+      uid:    u.id,
+      email:  u.email  || '',
+      gender: u.gender || '',
+      age:    u.age,
+      height: u.height || '',
+      weight: u.weight || '',
+      tier:   u.tier,
+      count:  count,
+      sec:    sec,
+      total:  total,
+      scores
+    }));
+  }
+
+  // ===== ブースBへ遷移 =====
+  function goBoothB() {
+    window.location.href = 'booth-b.html';
+  }
+
+  // ===== リセット =====
+  function resetAll() {
+    userData = null;
+    count = 0;
+    timeLeft = 0;
+    clearInterval(timerInterval);
+    clearInterval(beepInterval);
+    document.getElementById('manual-qr').value = '';
+    showScreen('screen-start');
+  }
+</script>
+</body>
+</html>
