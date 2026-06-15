@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SDWSE6MTHS"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SDWSE6MTHS'), { 'content_group': 'アプリ' });
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="自転車交通ルールクイズ結果を確認しよう！">
+<title>結果発表 🚲 自転車交通ルール・標識クイズ</title>
+<link rel="stylesheet" href="css/style.css?v08">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-wrapper">
+
+	<!-- ヘッダー -->
+	<header class="app-header">
+		<div class="lang-switcher">
+			<button type="button" class="lang-btn" id="lang-btn" aria-haspopup="listbox" aria-expanded="false">
+				<span id="lang-flag-img" class="fi fi-jp"></span>
+				<span class="arrow">▼</span>
+			</button>
+			<ul class="lang-dropdown" id="lang-dropdown" role="listbox">
+				<li><button type="button" data-lang="ja"><span class="fi fi-jp"></span> 日本語</button></li>
+				<li><button type="button" data-lang="en"><span class="fi fi-us"></span> English</button></li>
+				<li><button type="button" data-lang="vi"><span class="fi fi-vn"></span> Tiếng Việt</button></li>
+				<li><button type="button" data-lang="zh"><span class="fi fi-cn"></span> 中文</button></li>
+				<li><button type="button" data-lang="tl"><span class="fi fi-ph"></span> Filipino</button></li>
+				<li><button type="button" data-lang="id"><span class="fi fi-id"></span> Indonesia</button></li>
+				<li><button type="button" data-lang="my"><span class="fi fi-mm"></span> မြန်မာ</button></li>
+			</ul>
+		</div>
+		<span class="logo-icon">🚲</span>
+		<h1 id="result-header">結果発表</h1>
+		<p class="sub-title" id="result-subtitle">自転車交通ルール・標識クイズ</p>
+	</header>
+
+	<!-- 結果カード -->
+	<div class="result-card" id="result-card">
+		<span class="result-icon" id="result-icon">🎉</span>
+		<div class="result-score-display">
+			<span id="score-num">0</span><span> / <span id="score-total">20</span> <span id="score-suffix">問</span></span>
+		</div>
+		<div> <span class="result-rank" id="rank-badge">-</span> </div>
+		<div class="result-chart-wrap">
+			<canvas id="result-chart" width="260" height="260"></canvas>
+		</div>
+		<div class="result-message" id="result-message"></div>
+		<div class="result-actions">
+			<a href="index.html" class="btn-retry" id="btn-retry">🔄 もう一度チャレンジ！</a>
+			<button class="btn-share" id="btn-share">🐦 結果をシェア</button>
+		</div>
+		<p class="ex" id="review-arrow">↓↓ 問題の振り返り ↓↓</p>
+	</div>
+
+	<!-- 広告（中部） -->
+	<aside>
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800" crossorigin="anonymous"></script>
+		<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2445184492315800" data-ad-slot="9582767195" data-ad-format="auto" data-full-width-responsive="true"></ins>
+		<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+	</aside>
+
+	<!-- 問題振り返り -->
+	<div class="review-list" id="review-list">
+		<h3 id="review-header">📋 問題の振り返り</h3>
+	</div>
+
+	<!-- 広告（下部） -->
+	<aside>
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800" crossorigin="anonymous"></script>
+		<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2445184492315800" data-ad-slot="9582767195" data-ad-format="auto" data-full-width-responsive="true"></ins>
+		<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+	</aside>
+
+	<div class="text-center mt-16">
+		<a href="index.html" class="btn-retry" id="btn-retry-bottom" style="display:inline-block; padding:18px 40px;">🔄 もう一度チャレンジ！</a>
+	</div>
+	<div class="text-center">
+		<a href="../rules/index.html" class="btn-try" id="btn-next-quiz">次は違反行為クイズに挑戦！</a>
+	</div>
+	<small class="copy">&copy; 2026 HPLite</small>
+</div>
+
+<script src="js/i18n.js?v01"></script>
+<script>
+(function () {
+  /* ---- データ取得 ---- */
+  const stored = localStorage.getItem('bicycleQuizResult');
+  if (!stored) { window.location.href = 'index.html'; return; }
+  const result = JSON.parse(stored);
+  const { score, total, answers } = result;
+
+  /* ---- 言語UI初期化 ---- */
+  const CC = { ja:'jp', en:'us', vi:'vn', zh:'cn', tl:'ph', id:'id', my:'mm' };
+  const btn      = document.getElementById('lang-btn');
+  const dropdown = document.getElementById('lang-dropdown');
+  const flagSpan = document.getElementById('lang-flag-img');
+  const setFlag  = lang => { flagSpan.className = 'fi fi-' + (CC[lang] || 'jp'); };
+  setFlag(getCurrentLang());
+  if (btn) {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = dropdown.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+    dropdown.querySelectorAll('[data-lang]').forEach(lb => {
+      lb.addEventListener('click', () => {
+        localStorage.setItem(LANG_KEY, lb.dataset.lang);
+        setFlag(lb.dataset.lang);
+        dropdown.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        renderPage();
+      });
+    });
+    document.addEventListener('click', () => {
+      dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  let chartInstance = null;
+
+  function renderPage() {
+    const tx = t();
+    document.documentElement.lang = getCurrentLang();
+
+    /* ---- 静的テキスト ---- */
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('result-header',   tx.resultHeader);
+    set('result-subtitle', tx.resultSubtitle);
+    set('score-num',   score);
+    set('score-total', total);
+    set('score-suffix', tx.scoreSuffix);
+    set('review-arrow',  tx.reviewArrow);
+    set('review-header', tx.reviewHeader);
+    set('btn-retry',        tx.retryBtn);
+    set('btn-retry-bottom', tx.retryBtn);
+    set('btn-share',    tx.shareBtn);
+    set('btn-next-quiz', tx.nextQuizBtn);
+
+    /* ---- ランク判定 ---- */
+    const pct = score / total;
+    let rankClass, rankText, icon, message;
+    if (score === total) {
+      rankClass = 'rank-perfect'; rankText = tx.rankPerfect; icon = '🏆'; message = tx.msgPerfect;
+    } else if (pct >= 0.8) {
+      rankClass = 'rank-great';   rankText = tx.rankGreat;   icon = '⭐'; message = tx.msgGreat;
+    } else if (pct >= 0.6) {
+      rankClass = 'rank-good';    rankText = tx.rankGood;    icon = '👍'; message = tx.msgGood;
+    } else {
+      rankClass = 'rank-try';     rankText = tx.rankTry;     icon = '📖'; message = tx.msgTry;
+    }
+    set('result-icon',    icon);
+    set('result-message', message);
+    const badge = document.getElementById('rank-badge');
+    badge.textContent = rankText;
+    badge.className   = 'result-rank ' + rankClass;
+
+    /* ---- ドーナツチャート ---- */
+    if (chartInstance) { chartInstance.destroy(); }
+    const ctx = document.getElementById('result-chart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [tx.chartCorrect, tx.chartWrong],
+        datasets: [{
+          data: [score, total - score],
+          backgroundColor: ['#43A047', '#EF9A9A'],
+          borderColor:     ['#2E7D32', '#E53935'],
+          borderWidth: 2, hoverOffset: 8,
+        }],
+      },
+      options: {
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 14, weight: 'bold' }, padding: 16 },
+          },
+          tooltip: {
+            callbacks: { label: c => ` ${c.label}: ${c.parsed}` },
+          },
+        },
+        animation: { animateRotate: true, duration: 900 },
+      },
+      plugins: [{
+        id: 'centerText',
+        afterDraw(chart) {
+          const { width, height, ctx } = chart;
+          ctx.save();
+          ctx.font = `bold 2rem sans-serif`;
+          ctx.fillStyle = '#1565C0';
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${score}/${total}`, width / 2, height / 2 - 16);
+          ctx.font = `1rem sans-serif`;
+          ctx.fillStyle = '#546E7A';
+          ctx.fillText(tx.chartCenterLabel, width / 2, height / 2 + 18);
+          ctx.restore();
+        },
+      }],
+    });
+
+    /* ---- シェアボタン ---- */
+    document.getElementById('btn-share').onclick = () => {
+      const text = encodeURIComponent(tx.shareText(score, total, rankText));
+      const url  = encodeURIComponent(window.location.origin + '/index.html');
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener,noreferrer');
+    };
+
+    /* ---- 振り返りリスト ---- */
+    const reviewContainer = document.getElementById('review-list');
+    const existingItems = reviewContainer.querySelectorAll('.review-item');
+    existingItems.forEach(el => el.remove());
+
+    if (answers && answers.length > 0) {
+      answers.forEach((ans, idx) => {
+        const isOk = ans.correct;
+        const item = document.createElement('div');
+        item.className = `review-item${isOk ? '' : ' is-wrong'}`;
+
+        const signHtml = ans.signImage ? `
+          <div class="review-sign-wrap">
+            <div class="review-sign-box">
+              <img class="review-sign-img" src="${ans.signImage}" alt="${ans.signName}">
+            </div>
+            <span class="review-sign-label">${ans.signName}</span>
+          </div>` : '';
+
+        const headerHtml = `
+          <div class="review-q-header">
+            <span class="review-badge ${isOk ? 'badge-ok' : 'badge-ng'}">${isOk ? '○' : '✕'}</span>
+            <span class="review-q-num">Q${idx + 1}</span>
+            <span class="review-q-text">${ans.question}</span>
+          </div>`;
+
+        const answerHtml = `
+          <div class="review-answers">
+            <p class="review-ans-row ${isOk ? 'ans-ok' : 'ans-ng'}">
+              <span class="ans-label">${tx.yourAnswer}</span>
+              <span class="ans-value">${isOk ? '✅' : '❌'} ${ans.selectedText}</span>
+            </p>
+            ${!isOk ? `
+            <p class="review-ans-row ans-correct">
+              <span class="ans-label">${tx.correctLabel}</span>
+              <span class="ans-value">⭕ ${ans.correctText}</span>
+            </p>` : ''}
+          </div>`;
+
+        const expHtml = ans.explanation
+          ? `<p class="review-explanation">${ans.explanation}</p>` : '';
+
+        item.innerHTML = signHtml + headerHtml + answerHtml + expHtml;
+        reviewContainer.appendChild(item);
+      });
+    }
+  }
+
+  renderPage();
+})();
+</script>
+</body>
+</html>

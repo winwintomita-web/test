@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SDWSE6MTHS"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SDWSE6MTHS'), { 'content_group': 'アプリ' });
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>結果を計算中… 🚲 自転車交通ルール・標識クイズ</title>
+<link rel="stylesheet" href="css/style.css?v08">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+<div class="app-wrapper">
+
+	<!-- ヘッダー -->
+	<header class="app-header">
+		<div class="lang-switcher">
+			<button type="button" class="lang-btn" id="lang-btn" aria-haspopup="listbox" aria-expanded="false">
+				<span id="lang-flag-img" class="fi fi-jp"></span>
+				<span class="arrow">▼</span>
+			</button>
+			<ul class="lang-dropdown" id="lang-dropdown" role="listbox">
+				<li><button type="button" data-lang="ja"><span class="fi fi-jp"></span> 日本語</button></li>
+				<li><button type="button" data-lang="en"><span class="fi fi-us"></span> English</button></li>
+				<li><button type="button" data-lang="vi"><span class="fi fi-vn"></span> Tiếng Việt</button></li>
+				<li><button type="button" data-lang="zh"><span class="fi fi-cn"></span> 中文</button></li>
+				<li><button type="button" data-lang="tl"><span class="fi fi-ph"></span> Filipino</button></li>
+				<li><button type="button" data-lang="id"><span class="fi fi-id"></span> Indonesia</button></li>
+				<li><button type="button" data-lang="my"><span class="fi fi-mm"></span> မြန်မာ</button></li>
+			</ul>
+		</div>
+		<span class="logo-icon">🚲</span>
+		<h1 id="app-title">自転車交通ルール<br>クイズ</h1>
+	</header>
+
+	<!-- カウントダウン＆遷移 -->
+	<div class="interstitial-wrap">
+		<h2 id="quiz-complete">🎉 クイズ完了！</h2>
+		<p id="soon-result">まもなく結果を表示します。</p>
+		<div class="countdown-circle" id="countdown">5</div>
+		<a href="result.html" class="btn-result-go" id="btn-result">今すぐ結果を見る 📊</a>
+	</div>
+
+	<!-- 広告スペース（中間ページ メイン） -->
+	<aside>
+		<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2445184492315800" crossorigin="anonymous"></script>
+		<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2445184492315800" data-ad-slot="9582767195" data-ad-format="auto" data-full-width-responsive="true"></ins>
+		<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+	</aside>
+	<small class="copy">&copy; 2026 HPLite</small>
+</div>
+
+<script src="js/i18n.js?v01"></script>
+<script>
+(function() {
+  const stored = localStorage.getItem('bicycleQuizResult');
+  if (!stored) { window.location.href = 'index.html'; return; }
+
+  /* ---- 言語UI ---- */
+  const CC = { ja:'jp', en:'us', vi:'vn', zh:'cn', tl:'ph', id:'id', my:'mm' };
+  const btn      = document.getElementById('lang-btn');
+  const dropdown = document.getElementById('lang-dropdown');
+  const flagSpan = document.getElementById('lang-flag-img');
+  const setFlag  = lang => { flagSpan.className = 'fi fi-' + (CC[lang] || 'jp'); };
+  setFlag(getCurrentLang());
+  if (btn) {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = dropdown.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+    dropdown.querySelectorAll('[data-lang]').forEach(lb => {
+      lb.addEventListener('click', () => {
+        localStorage.setItem(LANG_KEY, lb.dataset.lang);
+        setFlag(lb.dataset.lang);
+        dropdown.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        applyText();
+      });
+    });
+    document.addEventListener('click', () => {
+      dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  function applyText() {
+    const tx = t();
+    document.documentElement.lang = getCurrentLang();
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('app-title',     tx.appTitle);
+    set('quiz-complete', tx.quizComplete);
+    set('soon-result',   tx.soonResult);
+    set('btn-result',    tx.goResult);
+  }
+  applyText();
+
+  /* ---- カウントダウン ---- */
+  let count = 5;
+  const countEl   = document.getElementById('countdown');
+  const btnResult = document.getElementById('btn-result');
+
+  const timer = setInterval(() => {
+    count--;
+    countEl.textContent = count;
+    countEl.style.transform = 'scale(1.2)';
+    setTimeout(() => { countEl.style.transform = 'scale(1)'; }, 150);
+    if (count <= 0) { clearInterval(timer); window.location.href = 'result.html'; }
+    if (count <= 2) { btnResult.classList.add('visible'); }
+  }, 1000);
+
+  btnResult.addEventListener('click', () => { clearInterval(timer); });
+})();
+</script>
+</body>
+</html>
