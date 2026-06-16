@@ -424,7 +424,89 @@
     </div>
   </div>
 
-  <!-- ② 測定時間モード -->
+  <!-- ② 申込フォームURL生成 -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">🔗</span>申込フォームURLの生成
+    </div>
+
+    <p style="font-size:0.82rem; color:var(--sub); margin-bottom:12px; line-height:1.7;">
+      会場名・測定モードを設定・保存してから「生成する」を押してください。<br>
+      生成されたQRコードを会場に掲示すると、参加者がスマホで読み取り自分で申し込めます。
+    </p>
+
+    <div class="url-gen-warning" id="url-gen-warning">
+      ⚠️ まず「会場名」を選択し、「測定時間モード」を保存してください。
+    </div>
+
+    <button class="btn btn-primary" id="gen-url-btn" onclick="generateVenueUrl()" style="margin-bottom:0;">
+      🔗 この会場の申込URLを生成する
+    </button>
+
+    <div id="url-gen-result" style="display:none; margin-top:16px;">
+      <div class="url-result-box">
+        <div style="font-size:0.82rem; font-weight:700; color:#166534; margin-bottom:4px;">✅ 申込URL（参加者が使うURL）</div>
+        <div class="url-text" id="generated-url"></div>
+        <div class="url-copy-row">
+          <button class="btn-sm btn-sm-primary" onclick="copyVenueUrl()">📋 URLをコピー</button>
+          <button class="btn-sm btn-sm-primary" onclick="openVenueUrl()">🌐 URLを開く</button>
+        </div>
+      </div>
+
+      <div class="venue-qr-card">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--text);">📌 会場掲示用QRコード</div>
+        <div id="venue-qr-box"></div>
+        <div class="qr-caption">
+          このQRコードを印刷して会場に貼ってください。<br>
+          参加者がスマホで読み取ると申込フォームが開きます。
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+          <button class="btn-sm btn-sm-primary" onclick="downloadVenueQr()">💾 PNG保存</button>
+          <button class="btn-sm btn-sm-primary" onclick="printVenueQr()">🖨️ 印刷する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ ブース用カメラの設定 -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">📷</span>ブース用カメラの設定
+    </div>
+
+    <p style="font-size:0.82rem; color:var(--sub); margin-bottom:12px; line-height:1.7;">
+      各ブースのスマホでQRコードを読み取ると測定ページが開きます。<br>
+      カメラに不具合が出た場合は、新しいスマホでQRコードを読み取ってください。
+    </p>
+
+    <!-- ブースA -->
+    <div style="border:1.5px solid #fed7aa; border-radius:12px; padding:16px; margin-bottom:12px; background:#fff7ed;">
+      <div style="font-size:0.88rem; font-weight:700; color:#ea580c; margin-bottom:8px;">🏃 ブースA｜反復横跳び測定カメラ</div>
+      <div style="font-size:0.75rem; color:#92400e; background:#fef3c7; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.7;">
+        📍 設置方法：選手の正面2〜3mに設置し、全身が映るよう高さを調整して固定してください。
+      </div>
+      <div id="booth-a-qr-box" style="display:flex; justify-content:center; margin-bottom:12px;"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+        <button class="btn-sm btn-sm-primary" onclick="copyBoothUrl('a')">📋 URLをコピー</button>
+        <button class="btn-sm btn-sm-primary" onclick="openBoothUrl('a')">🌐 URLを開く</button>
+      </div>
+    </div>
+
+    <!-- ブースB -->
+    <div style="border:1.5px solid #ede9fe; border-radius:12px; padding:16px; background:#f5f3ff;">
+      <div style="font-size:0.88rem; font-weight:700; color:#7c3aed; margin-bottom:8px;">🧘 ブースB｜バランス・姿勢測定カメラ</div>
+      <div style="font-size:0.75rem; color:#5b21b6; background:#ede9fe; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.7;">
+        📍 設置方法：選手の正面2〜3mに設置し、全身が映るよう高さを調整して固定してください。
+      </div>
+      <div id="booth-b-qr-box" style="display:flex; justify-content:center; margin-bottom:12px;"></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+        <button class="btn-sm btn-sm-primary" onclick="copyBoothUrl('b')">📋 URLをコピー</button>
+        <button class="btn-sm btn-sm-primary" onclick="openBoothUrl('b')">🌐 URLを開く</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 測定時間モード -->
   <div class="card">
     <div class="section-title">
       <span class="icon">⏱️</span>測定時間モードの設定
@@ -440,9 +522,9 @@
       <div class="mode-desc">
         受付時の年齢から、AIが自動でタイマー時間を3段階に切り替えます。
         <table>
-          <tr><td>現役世代（〜50歳）</td><td>反復横跳び <b>60秒</b> ／ 片足立ち <b>30秒</b></td></tr>
-          <tr><td>熟年層（51〜64歳）</td><td>反復横跳び <b>40秒</b> ／ 片足立ち <b>30秒</b></td></tr>
-          <tr><td>シニア層（65歳〜）</td><td>反復横跳び <b>20秒</b> ／ 片足立ち <b>30秒</b></td></tr>
+          <tr><td>アイアン世代（〜50歳）</td><td>反復横跳び <b>60秒</b> ／ 片足立ち <b>30秒</b></td></tr>
+          <tr><td>シルバー世代（51〜64歳）</td><td>反復横跳び <b>40秒</b> ／ 片足立ち <b>20秒</b></td></tr>
+          <tr><td>ゴールド世代（65歳〜）</td><td>反復横跳び <b>20秒</b> ／ 片足立ち <b>10秒</b></td></tr>
         </table>
       </div>
     </div>
@@ -483,47 +565,6 @@
     </div>
 
     <button class="btn btn-primary" onclick="saveSettings()">この設定を保存する ✓</button>
-  </div>
-
-  <!-- ③ 申込フォームURL生成 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="icon">🔗</span>申込フォームURLの生成
-    </div>
-
-    <p style="font-size:0.82rem; color:var(--sub); margin-bottom:12px; line-height:1.7;">
-      会場名・測定モードを設定・保存してから「生成する」を押してください。<br>
-      生成されたQRコードを会場に掲示すると、参加者がスマホで読み取り自分で申し込めます。
-    </p>
-
-    <div class="url-gen-warning" id="url-gen-warning">
-      ⚠️ まず「会場名」を選択し、「測定時間モード」を保存してください。
-    </div>
-
-    <button class="btn btn-primary" id="gen-url-btn" onclick="generateVenueUrl()" style="margin-bottom:0;">
-      🔗 この会場の申込URLを生成する
-    </button>
-
-    <div id="url-gen-result" style="display:none; margin-top:16px;">
-      <div class="url-result-box">
-        <div style="font-size:0.82rem; font-weight:700; color:#166534; margin-bottom:4px;">✅ 申込URL（参加者が使うURL）</div>
-        <div class="url-text" id="generated-url"></div>
-        <div class="url-copy-row">
-          <button class="btn-sm btn-sm-primary" onclick="copyVenueUrl()">📋 URLをコピー</button>
-          <button class="btn-sm btn-sm-primary" onclick="openVenueUrl()">🌐 URLを開く</button>
-        </div>
-      </div>
-
-      <div class="venue-qr-card">
-        <div style="font-size:0.85rem; font-weight:700; color:var(--text);">📌 会場掲示用QRコード</div>
-        <div id="venue-qr-box"></div>
-        <div class="qr-caption">
-          このQRコードを印刷して会場に貼ってください。<br>
-          参加者がスマホで読み取ると申込フォームが開きます。
-        </div>
-        <button class="btn-sm btn-sm-primary" onclick="printVenueQr()">🖨️ 印刷する</button>
-      </div>
-    </div>
   </div>
 
   <!-- ④ バックスイッチ -->
@@ -711,6 +752,7 @@
     renderMode();
     renderBackSwitch();
     renderDataSummary();
+    generateBoothQrs();
   }
 
   // ===== 会場名 =====
@@ -994,6 +1036,45 @@
     b._timer = setTimeout(() => { b.style.display = 'none'; }, 2500);
   }
 
+  // ===== ブース用カメラQR生成 =====
+  let _boothAUrl = '';
+  let _boothBUrl = '';
+
+  function generateBoothQrs() {
+    const base = location.href.replace('admin.html', '').split('?')[0];
+    _boothAUrl = base + 'booth-a.html';
+    _boothBUrl = base + 'booth-b.html';
+
+    const aBox = document.getElementById('booth-a-qr-box');
+    const bBox = document.getElementById('booth-b-qr-box');
+    aBox.innerHTML = '';
+    bBox.innerHTML = '';
+
+    new QRCode(aBox, {
+      text: _boothAUrl, width: 180, height: 180,
+      colorDark: '#ea580c', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+    new QRCode(bBox, {
+      text: _boothBUrl, width: 180, height: 180,
+      colorDark: '#7c3aed', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  }
+
+  function copyBoothUrl(booth) {
+    const url  = booth === 'a' ? _boothAUrl : _boothBUrl;
+    const name = booth === 'a' ? 'ブースA' : 'ブースB';
+    navigator.clipboard.writeText(url)
+      .then(() => showBanner(`${name}のURLをコピーしました`))
+      .catch(() => { prompt(`${name}のURLをコピーしてください：`, url); });
+  }
+
+  function openBoothUrl(booth) {
+    const url = booth === 'a' ? _boothAUrl : _boothBUrl;
+    window.open(url, '_blank');
+  }
+
   // ===== 申込URL生成 =====
   let _generatedUrl = '';
 
@@ -1047,6 +1128,21 @@
   function openVenueUrl() {
     if (!_generatedUrl) return;
     window.open(_generatedUrl, '_blank');
+  }
+
+  function downloadVenueQr() {
+    const qrBox = document.getElementById('venue-qr-box');
+    const canvas = qrBox.querySelector('canvas');
+    const img    = qrBox.querySelector('img');
+    const src    = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+    if (!src) { alert('QRコードがまだ生成されていません'); return; }
+
+    const venue = cfg.selectedVenue || '会場';
+    const a     = document.createElement('a');
+    a.href      = src;
+    a.download  = `申込QR_${venue}.png`;
+    a.click();
+    showBanner(`「申込QR_${venue}.png」を保存しました`);
   }
 
   function printVenueQr() {
