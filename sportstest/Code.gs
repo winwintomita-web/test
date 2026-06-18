@@ -84,24 +84,27 @@ function saveBoothA(data) {
 function saveComplete(data) {
   const sheet  = getSheet();
   const rowIdx = findRow(sheet, data.uid);
+  // nullや未定義の値でブースAの既存データを上書きしないよう有効値のみ書き込む
+  function val(v) { return (v !== undefined && v !== null && v !== '') ? v : undefined; }
   const measureData = {
-    boothA_count: data.boothA_count !== undefined ? data.boothA_count : '',
-    boothA_sec:   data.boothA_sec   !== undefined ? data.boothA_sec   : '',
-    boothA_score: data.boothA_score !== undefined ? data.boothA_score : '',
-    leftHeld:     data.leftHeld     !== undefined ? data.leftHeld     : '',
-    rightHeld:    data.rightHeld    !== undefined ? data.rightHeld    : '',
-    balScore:     data.balScore     !== undefined ? data.balScore     : '',
-    combined:     data.combined     !== undefined ? data.combined     : '',
-    b_ai1_score:  data.b_ai1_score  !== undefined ? data.b_ai1_score  : '',
-    b_ai1_adv:    data.b_ai1_adv    !== undefined ? data.b_ai1_adv    : '',
-    b_ai2_score:  data.b_ai2_score  !== undefined ? data.b_ai2_score  : '',
-    b_ai2_adv:    data.b_ai2_adv    !== undefined ? data.b_ai2_adv    : '',
-    b_ai3_score:  data.b_ai3_score  !== undefined ? data.b_ai3_score  : '',
-    b_ai3_adv:    data.b_ai3_adv    !== undefined ? data.b_ai3_adv    : '',
-    aiCombined:   data.aiCombined   !== undefined ? data.aiCombined   : '',
-    completedAt:  data.completedAt  || new Date().toISOString(),
-    emailSent:    '',
+    leftHeld:    data.leftHeld    !== undefined ? data.leftHeld    : '',
+    rightHeld:   data.rightHeld   !== undefined ? data.rightHeld   : '',
+    balScore:    data.balScore    !== undefined ? data.balScore    : '',
+    combined:    data.combined    !== undefined ? data.combined    : '',
+    b_ai1_score: data.b_ai1_score !== undefined ? data.b_ai1_score : '',
+    b_ai1_adv:   data.b_ai1_adv   !== undefined ? data.b_ai1_adv   : '',
+    b_ai2_score: data.b_ai2_score !== undefined ? data.b_ai2_score : '',
+    b_ai2_adv:   data.b_ai2_adv   !== undefined ? data.b_ai2_adv   : '',
+    b_ai3_score: data.b_ai3_score !== undefined ? data.b_ai3_score : '',
+    b_ai3_adv:   data.b_ai3_adv   !== undefined ? data.b_ai3_adv   : '',
+    aiCombined:  data.aiCombined  !== undefined ? data.aiCombined  : '',
+    completedAt: data.completedAt || new Date().toISOString(),
+    emailSent:   '',
   };
+  // ブースAのデータは有効値がある場合のみ上書き（既存データを保護）
+  if (val(data.boothA_count) !== undefined) measureData.boothA_count = data.boothA_count;
+  if (val(data.boothA_sec)   !== undefined) measureData.boothA_sec   = data.boothA_sec;
+  if (val(data.boothA_score) !== undefined) measureData.boothA_score = data.boothA_score;
   if (rowIdx) {
     updateRow(sheet, rowIdx, measureData);
   } else {
