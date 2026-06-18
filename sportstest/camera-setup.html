@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>カメラ位置設定</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+    #video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      padding: 12px 16px 10px;
+      text-align: center;
+      z-index: 10;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    }
+    #header h1 { font-size: 0.95rem; font-weight: 700; }
+    #header p  { font-size: 0.72rem; opacity: 0.85; margin-top: 3px; line-height: 1.5; }
+
+    #ok-btn {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 18px 48px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 4px 24px rgba(16, 185, 129, 0.55);
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ok-btn:active { transform: translateX(-50%) scale(0.96); }
+
+    #error-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: #0f172a;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    }
+    #error-screen.show { display: flex; }
+    #error-screen p { line-height: 1.7; }
+    #reload-btn {
+      margin-top: 20px;
+      padding: 12px 28px;
+      background: #1e40af;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline muted></video>
+<canvas id="overlay"></canvas>
+
+<div id="header">
+  <h1 id="hd-title">📷 カメラ位置を合わせてください</h1>
+  <p id="hd-desc">ガイドに全身が収まるようカメラを調整し、固定してください</p>
+</div>
+
+<button id="ok-btn" onclick="goNext()">✅ この位置でOK</button>
+
+<div id="error-screen">
+  <p style="font-size:2.5rem; margin-bottom:16px;">📷</p>
+  <p style="font-size:1rem; font-weight:700; margin-bottom:10px;">カメラにアクセスできません</p>
+  <p style="font-size:0.82rem; opacity:0.8;">ブラウザの設定でカメラの使用を許可してから<br>ページを再読み込みしてください。</p>
+  <button id="reload-btn" onclick="location.reload()">再読み込み</button>
+</div>
+
+<script>
+  const params  = new URLSearchParams(location.search);
+  const booth   = (params.get('booth') || 'a').toLowerCase();
+  const base    = location.href.replace(/[^/]*$/, '');
+  const nextUrl = base + (booth === 'a' ? 'booth-a.html' : 'booth-b.html');
+
+  if (booth === 'a') {
+    document.getElementById('hd-title').textContent = '🏃 ブースA カメラ位置設定（反復横跳び）';
+    document.getElementById('hd-desc').textContent  = '3本のラインと人型が画面に収まるようカメラを調整・固定してください';
+  } else {
+    document.getElementById('hd-title').textContent = '🧘 ブースB カメラ位置設定（バランス・姿勢）';
+    document.getElementById('hd-desc').textContent  = '人型ガイドに全身が収まるようカメラを調整・固定してください';
+  }
+
+  const video  = document.getElementById('video');
+  const canvas = document.getElementById('overlay');
+  const ctx    = canvas.getContext('2d');
+  let   animId = null;
+
+  /* ---------- カメラ起動 ---------- */
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      video.srcObject = stream;
+    } catch (_) {
+      document.getElementById('error-screen').classList.add('show');
+    }
+  }
+
+  /* ---------- キャンバスリサイズ ---------- */
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  /* ---------- 描画ループ ---------- */
+  function loop() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    booth === 'a' ? drawBoothA(W, H) : drawBoothB(W, H);
+    animId = requestAnimationFrame(loop);
+  }
+
+  /* ---------- ブースA オーバーレイ ---------- */
+  function drawBoothA(W, H) {
+    const groundY = H * 0.80;
+
+    // 3本のテープライン（正面から見た反復横跳びの左・中・右ライン）
+    const xL = W * 0.25;
+    const xC = W * 0.50;
+    const xR = W * 0.75;
+    const tapeH = H * 0.07;
+    const tapeW = 6;
+
+    // ゾーン背景
+    ctx.fillStyle = 'rgba(255, 200, 50, 0.05)';
+    ctx.fillRect(xL, groundY - tapeH * 2, xR - xL, tapeH * 2);
+
+    // 左ライン（黄色テープ）
+    ctx.fillStyle = 'rgba(255, 210, 40, 0.85)';
+    ctx.fillRect(xL - tapeW / 2, groundY - tapeH, tapeW, tapeH + 4);
+
+    // 中央ライン（白・スタート位置）
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.fillRect(xC - tapeW / 2, groundY - tapeH * 1.4, tapeW, tapeH * 1.4 + 4);
+
+    // 右ライン（黄色テープ）
+    ctx.fillStyle = 'rgba(255, 210, 40, 0.85)';
+    ctx.fillRect(xR - tapeW / 2, groundY - tapeH, tapeW, tapeH + 4);
+
+    // 地面ライン（破線）
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([10, 7]);
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(W, groundY);
+    ctx.stroke();
+    ctx.restore();
+
+    // ラベル
+    const fs = Math.max(11, Math.round(W * 0.022));
+    ctx.font         = `bold ${fs}px 'Hiragino Kaku Gothic ProN', sans-serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+
+    ctx.fillStyle = 'rgba(255, 210, 40, 0.95)';
+    ctx.fillText('左', xL, groundY + 7);
+    ctx.fillText('右', xR, groundY + 7);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillText('中（スタート）', xC, groundY + 7);
+
+    // 地面ラベル
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle    = 'rgba(255, 255, 255, 0.5)';
+    ctx.font         = `${Math.max(10, Math.round(W * 0.018))}px sans-serif`;
+    ctx.fillText('── 地面', 14, groundY - 5);
+
+    // 人型シルエット（中央に配置）
+    drawPerson(W, H, xC, groundY, 0.57);
+  }
+
+  /* ---------- ブースB オーバーレイ ---------- */
+  function drawBoothB(W, H) {
+    const groundY = H * 0.82;
+
+    // 地面ライン（破線）
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([10, 7]);
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(W, groundY);
+    ctx.stroke();
+    ctx.restore();
+
+    // 立ち位置ブラケット
+    const cx = W * 0.5;
+    const bW = W * 0.13;
+    ctx.strokeStyle = 'rgba(167, 139, 250, 0.6)';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cx - bW, groundY - H * 0.09);
+    ctx.lineTo(cx - bW, groundY);
+    ctx.lineTo(cx + bW, groundY);
+    ctx.lineTo(cx + bW, groundY - H * 0.09);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 地面ラベル
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle    = 'rgba(255, 255, 255, 0.5)';
+    ctx.font         = `${Math.max(10, Math.round(W * 0.018))}px sans-serif`;
+    ctx.fillText('── 地面', 14, groundY - 5);
+
+    // 立ち位置ラベル
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle    = 'rgba(167, 139, 250, 0.95)';
+    ctx.font         = `bold ${Math.max(11, Math.round(W * 0.02))}px sans-serif`;
+    ctx.fillText('立ち位置', cx, groundY + 7);
+
+    // 人型シルエット
+    drawPerson(W, H, cx, groundY, 0.62);
+  }
+
+  /* ---------- 人型シルエット ---------- */
+  function drawPerson(W, H, cx, groundY, heightRatio) {
+    const ph = H * heightRatio;
+    const s  = ph / 170;
+    const a  = 0.20;
+
+    ctx.save();
+    ctx.translate(cx, groundY);
+
+    const fill   = `rgba(255, 255, 255, ${a})`;
+    const stroke = `rgba(255, 255, 255, ${a + 0.12})`;
+
+    // 頭
+    ctx.beginPath();
+    ctx.arc(0, -ph + 14 * s, 13 * s, 0, Math.PI * 2);
+    ctx.fillStyle   = fill;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth   = 1.5;
+    ctx.fill(); ctx.stroke();
+
+    // 胴体
+    ctx.beginPath();
+    ctx.moveTo(-9  * s, -ph + 27 * s);
+    ctx.lineTo( 9  * s, -ph + 27 * s);
+    ctx.lineTo( 20 * s, -ph + 90 * s);
+    ctx.lineTo(-20 * s, -ph + 90 * s);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+
+    // 左腕
+    ctx.beginPath();
+    ctx.moveTo(-9  * s, -ph + 33 * s);
+    ctx.lineTo(-28 * s, -ph + 72 * s);
+    ctx.lineTo(-22 * s, -ph + 90 * s);
+    ctx.lineTo(-7  * s, -ph + 55 * s);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+
+    // 右腕
+    ctx.beginPath();
+    ctx.moveTo( 9  * s, -ph + 33 * s);
+    ctx.lineTo( 28 * s, -ph + 72 * s);
+    ctx.lineTo( 22 * s, -ph + 90 * s);
+    ctx.lineTo( 7  * s, -ph + 55 * s);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+
+    // 左足
+    ctx.beginPath();
+    ctx.moveTo(-4  * s, -ph + 90  * s);
+    ctx.lineTo(-17 * s, -ph + 148 * s);
+    ctx.lineTo(-9  * s, -ph + 150 * s);
+    ctx.lineTo( 3  * s, -ph + 95  * s);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+
+    // 右足
+    ctx.beginPath();
+    ctx.moveTo( 4  * s, -ph + 90  * s);
+    ctx.lineTo( 17 * s, -ph + 148 * s);
+    ctx.lineTo( 9  * s, -ph + 150 * s);
+    ctx.lineTo(-3  * s, -ph + 95  * s);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+
+    ctx.restore();
+  }
+
+  /* ---------- OK → 次のページへ ---------- */
+  function goNext() {
+    if (animId) cancelAnimationFrame(animId);
+    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    location.href = nextUrl;
+  }
+
+  /* ---------- 初期化 ---------- */
+  window.addEventListener('resize', resize);
+  resize();
+  startCamera();
+  loop();
+</script>
+</body>
+</html>

@@ -1071,8 +1071,8 @@
   }
 
   function openBoothUrl(booth) {
-    const url = booth === 'a' ? _boothAUrl : _boothBUrl;
-    window.open(url, '_blank');
+    const base = location.href.replace(/[^/]*$/, '');
+    window.open(base + 'camera-setup.html?booth=' + booth, '_blank');
   }
 
   // ===== 申込URL生成 =====
