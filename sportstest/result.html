@@ -309,6 +309,9 @@
 </div>
 
 <script>
+  // ===== GAS設定 =====
+  const GAS_URL = ''; // ← index.htmlと同じURLを貼り付けてください
+
   // ===== データ読み込み =====
   function loadData() {
     const fin     = JSON.parse(sessionStorage.getItem('final_result') || 'null');
@@ -351,8 +354,8 @@
     const rps    = count / sec; // 1秒あたり回数
 
     // 年齢区分ごとの期待値
-    const tier = data.tier || '現役世代';
-    const bench = tier === 'シニア層' ? 0.45 : tier === '熟年層' ? 0.60 : 0.75;
+    const tier = data.tier || 'アイアン世代';
+    const bench = tier === 'ゴールド世代' ? 0.45 : tier === 'シルバー世代' ? 0.60 : 0.75;
     const speedRate  = Math.min(rps / bench, 1.3);
 
     return {
@@ -731,7 +734,23 @@
   }
 
   // ===== 起動 =====
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
+    // URLに ?uid=xxx がある場合はGASからデータ取得
+    const urlUid = new URLSearchParams(location.search).get('uid');
+    if (urlUid && GAS_URL) {
+      try {
+        const resp = await fetch(GAS_URL + '?uid=' + encodeURIComponent(urlUid));
+        const gasData = await resp.json();
+        if (gasData && gasData.uid) {
+          setTimeout(() => build(gasData), 800);
+          return;
+        }
+      } catch (e) {
+        console.warn('GASデータ取得エラー:', e);
+      }
+    }
+
+    // GASなし または URLにuidなし → 既存のlocalStorage読み込み
     const data = loadData();
     if (!data) {
       document.getElementById('loading').style.display = 'none';
@@ -739,7 +758,6 @@
         '<div style="padding:40px;text-align:center;opacity:0.7;">測定データがありません。<br>受付からやり直してください。<br><br><a href="index.html" style="color:#c4b5fd;">← 受付画面へ</a></div>';
       return;
     }
-    // 少し遅らせてアニメーションを見せる
     setTimeout(() => build(data), 800);
   });
 </script>

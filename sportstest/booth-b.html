@@ -493,6 +493,19 @@
 </div>
 
 <script>
+  // ===== GAS設定 =====
+  const GAS_URL = ''; // ← index.htmlと同じURLを貼り付けてください
+
+  // ===== GAS送信処理 =====
+  async function sendToGAS(action, data) {
+    if (!GAS_URL) return;
+    try {
+      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) });
+    } catch (e) {
+      console.warn('GAS送信エラー:', e);
+    }
+  }
+
   // ===== 状態 =====
   const state = {
     leftHeld:  0,
@@ -548,7 +561,7 @@
       const raw = JSON.parse(text);
       if (!raw.age) throw new Error('invalid');
       const GENDER = { M: '男性', F: '女性' };
-      const TIER   = ['現役世代', '熟年層', 'シニア層'];
+      const TIER   = ['アイアン世代', 'シルバー世代', 'ゴールド世代'];
       userData = {
         id:     raw.id,
         email:  raw.em  || raw.email || raw.name || '',
@@ -1101,6 +1114,19 @@
       allRecords.push({ uid: 'B_ONLY_' + Date.now(), ...measureData });
     }
     localStorage.setItem('aidock_records', JSON.stringify(allRecords));
+
+    // GASへ完了データを送信（GAS側でメール自動送信）
+    sendToGAS('complete', {
+      uid:          prevA?.uid || 'B_ONLY_' + Date.now(),
+      boothA_count: prevA?.count  ?? null,
+      boothA_sec:   prevA?.sec    ?? null,
+      boothA_score: prevA?.total  ?? null,
+      leftHeld:     ls,
+      rightHeld:    rs,
+      balScore,
+      combined,
+      completedAt:  measureData.completedAt,
+    });
   }
 
   // ===== 中断 =====

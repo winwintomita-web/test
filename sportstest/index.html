@@ -485,6 +485,10 @@
 </div>
 
 <script>
+  // ===== GAS設定 =====
+  // GASデプロイ後に発行されたURLを貼り付けてください
+  const GAS_URL = ''; // ← 例: 'https://script.google.com/macros/s/xxxx/exec'
+
   // ===== EmailJS 設定 =====
   // EmailJS（https://www.emailjs.com/）でアカウント作成後、以下3つを設定してください
   const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // ← Dashboard > Account > Public Key
@@ -586,9 +590,9 @@
 
   // ===== 測定時間取得（年齢別） =====
   function getMeasureTime(age) {
-    if (age <= 50) return { label: '現役世代', fukuY: 60, kataashi: 30 };
-    if (age <= 64) return { label: '熟年層',   fukuY: 40, kataashi: 30 };
-    return               { label: 'シニア層',  fukuY: 20, kataashi: 30 };
+    if (age <= 50) return { label: 'アイアン世代', fukuY: 60, kataashi: 30 };
+    if (age <= 64) return { label: 'シルバー世代', fukuY: 40, kataashi: 20 };
+    return               { label: 'ゴールド世代',  fukuY: 20, kataashi: 10 };
   }
 
   // ===== バリデーション =====
@@ -648,7 +652,7 @@
 
     // QRコードのデータ（ASCII のみ：qrcodejs の日本語バグ回避）
     const gCode = state.gender === '男性' ? 'M' : 'F';
-    const tCode = time.label === '現役世代' ? 0 : time.label === '熟年層' ? 1 : 2;
+    const tCode = time.label === 'アイアン世代' ? 0 : time.label === 'シルバー世代' ? 1 : 2;
     const qrData = JSON.stringify({
       id:  uid,
       em:  state.email,
@@ -690,6 +694,16 @@
     });
     localStorage.setItem('aidock_records', JSON.stringify(records));
 
+    // GASへ受付データを送信
+    sendToGAS('register', {
+      uid, gender: state.gender, age,
+      year: state.year, month: state.month, day: state.day,
+      height: state.height, weight: state.weight,
+      email: state.email, tier: time.label,
+      venue: adminCfg.selectedVenue || '',
+      registeredAt: new Date().toISOString(),
+    });
+
     showScreen('screen-qr');
 
     // メール送信（QRコード描画の完了を少し待つ）
@@ -726,6 +740,16 @@
       document.getElementById('mail-badge-text').textContent = 'メール送信に失敗しました。画面のQRをご利用ください。';
       badge.style.background = '#fee2e2';
       badge.style.color       = '#991b1b';
+    }
+  }
+
+  // ===== GAS送信処理 =====
+  async function sendToGAS(action, data) {
+    if (!GAS_URL) return;
+    try {
+      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) });
+    } catch (e) {
+      console.warn('GAS送信エラー:', e);
     }
   }
 
