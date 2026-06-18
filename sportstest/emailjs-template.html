@@ -8,7 +8,7 @@
   - {{to_email}}  : 宛先メールアドレス
   - {{uid}}       : 受付番号
   - {{venue}}     : 会場名
-  - {{tier}}      : 年齢区分（現役世代 / 熟年層 / シニア層）
+  - {{tier}}      : 年齢区分（アイアン世代 / シルバー世代 / ゴールド世代）
   - {{age}}       : 年齢
   - {{fukuy_sec}} : 反復横跳び測定時間（秒）
   - {{kata_sec}}  : 片足立ち測定時間（秒）
@@ -163,6 +163,20 @@
       測定ブースで使うQRコードをお届けします。
     </p>
 
+    <div class="qr-section">
+      <div class="qr-title">📲 測定ブースで提示するQRコード</div>
+      <img src="{{qr_image}}" alt="QRコード" />
+      <div class="qr-note">
+        ※ このQRコードはブースAとブースBで使用します。<br>
+        スクリーンショットして保存しておいてください。
+      </div>
+    </div>
+
+    <div class="warn-box">
+      📌 <strong>メールを確認後、測定ブースへお進みください。</strong><br>
+      QRコードが届いていない場合は、スタッフにお申し付けください。
+    </div>
+
     <div class="info-box">
       <div class="info-row">
         <span class="info-label">受付番号</span>
@@ -184,20 +198,6 @@
         <span class="info-label">片足立ち（左右各）</span>
         <span class="info-val">{{kata_sec}}秒</span>
       </div>
-    </div>
-
-    <div class="qr-section">
-      <div class="qr-title">📲 測定ブースで提示するQRコード</div>
-      <img src="{{qr_image}}" alt="QRコード" />
-      <div class="qr-note">
-        ※ このQRコードはブースAとブースBで使用します。<br>
-        スクリーンショットして保存しておいてください。
-      </div>
-    </div>
-
-    <div class="warn-box">
-      📌 <strong>メールを確認後、測定ブースへお進みください。</strong><br>
-      QRコードが届いていない場合は、スタッフにお申し付けください。
     </div>
 
     <div class="steps-box">
