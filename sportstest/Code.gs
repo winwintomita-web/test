@@ -12,6 +12,8 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     if (data.action === 'register') {
       saveRegister(data);
+    } else if (data.action === 'booth_a') {
+      saveBoothA(data);
     } else if (data.action === 'complete') {
       saveComplete(data);
     }
@@ -55,7 +57,23 @@ function saveRegister(data) {
   }
 }
 
-// ===== 測定完了データ保存＋メール送信 =====
+// ===== ブースA測定データ保存 =====
+function saveBoothA(data) {
+  const sheet  = getSheet();
+  const rowIdx = findRow(sheet, data.uid);
+  const boothAData = {
+    boothA_count: data.boothA_count !== undefined ? data.boothA_count : '',
+    boothA_sec:   data.boothA_sec   !== undefined ? data.boothA_sec   : '',
+    boothA_score: data.boothA_score !== undefined ? data.boothA_score : '',
+  };
+  if (rowIdx) {
+    updateRow(sheet, rowIdx, boothAData);
+  } else {
+    appendRow(sheet, { uid: data.uid, ...boothAData });
+  }
+}
+
+// ===== ブースB測定完了データ保存＋メール送信 =====
 function saveComplete(data) {
   const sheet  = getSheet();
   const rowIdx = findRow(sheet, data.uid);
@@ -76,7 +94,11 @@ function saveComplete(data) {
     appendRow(sheet, { uid: data.uid, ...measureData });
   }
   const record = getRecord(data.uid);
-  if (record && record.email) {
+  // ブースA・B両方のデータが揃っている場合のみメール送信
+  const bothComplete = record &&
+    record.boothA_count !== '' && record.boothA_count !== null &&
+    record.leftHeld     !== '' && record.leftHeld     !== null;
+  if (bothComplete && record.email) {
     try {
       sendResultEmail(record);
       updateRow(sheet, findRow(sheet, data.uid), { emailSent: 'YES' });
