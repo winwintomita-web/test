@@ -1072,7 +1072,7 @@
 
   function openBoothUrl(booth) {
     const base = location.href.replace(/[^/]*$/, '');
-    window.open(base + 'camera-setup.html?booth=' + booth, '_blank');
+    window.open(base + 'camera-setup.html#' + booth, '_blank');
   }
 
   // ===== 申込URL生成 =====

@@ -106,9 +106,8 @@
 </div>
 
 <script>
-  const params  = new URLSearchParams(location.search);
-  const booth   = (params.get('booth') || 'a').toLowerCase();
-  const base    = location.href.replace(/[^/]*$/, '');
+  const booth   = (location.hash.slice(1) || 'a').toLowerCase();
+  const base    = location.href.replace(/#.*/, '').replace(/[^/]*$/, '');
   const nextUrl = base + (booth === 'a' ? 'booth-a.html' : 'booth-b.html');
 
   if (booth === 'a') {
