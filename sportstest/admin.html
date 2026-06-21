@@ -506,6 +506,24 @@
     </div>
   </div>
 
+  <!-- ③ 開催時間 -->
+  <div class="card">
+    <div class="section-title">
+      <span class="icon">🕐</span>開催時間の設定
+    </div>
+    <p style="font-size:0.8rem; color:var(--sub); margin-bottom:12px;">
+      スタッフハブの画面右上に表示される開催時間を設定します。
+    </p>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+      <input type="time" id="event-start"
+        style="flex:1; padding:10px; border:1.5px solid var(--border); border-radius:10px; font-size:1rem;" />
+      <span style="color:var(--sub); font-weight:700;">〜</span>
+      <input type="time" id="event-end"
+        style="flex:1; padding:10px; border:1.5px solid var(--border); border-radius:10px; font-size:1rem;" />
+    </div>
+    <button class="btn btn-primary" onclick="saveEventTime()">開催時間を保存</button>
+  </div>
+
   <!-- ④ 測定時間モード -->
   <div class="card">
     <div class="section-title">
@@ -691,6 +709,8 @@
     customFukuY:  60,
     customKata:   30,
     backSwitch:   false,
+    eventStart:   '',
+    eventEnd:     '',
   };
 
   function loadSettings() {
@@ -750,6 +770,7 @@
   function renderAll() {
     renderVenues();
     renderMode();
+    renderEventTime();
     renderBackSwitch();
     renderDataSummary();
     generateBoothQrs();
@@ -831,6 +852,18 @@
   function selectMode(mode) {
     cfg.timeMode = mode;
     renderMode();
+  }
+
+  // ===== 開催時間 =====
+  function renderEventTime() {
+    document.getElementById('event-start').value = cfg.eventStart || '';
+    document.getElementById('event-end').value   = cfg.eventEnd   || '';
+  }
+  function saveEventTime() {
+    cfg.eventStart = document.getElementById('event-start').value || '';
+    cfg.eventEnd   = document.getElementById('event-end').value   || '';
+    saveToStorage(cfg);
+    showBanner('✅ 開催時間を保存しました');
   }
 
   function saveSettings() {
