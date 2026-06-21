@@ -36,11 +36,17 @@
     }
     .header-top h1 { font-size: 1rem; font-weight: 700; cursor: default; user-select: none; }
     .header-date { font-size: 0.72rem; opacity: 0.75; margin-top: 3px; }
-    .event-time {
+    .header-right {
       text-align: right;
     }
-    .event-time .et-label { font-size: 0.65rem; opacity: 0.7; margin-bottom: 2px; }
-    .event-time .et-value { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .clock-disp {
+      font-size: 1.3rem; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      margin-bottom: 2px;
+    }
+    .event-time .et-label { font-size: 0.65rem; opacity: 0.7; margin-bottom: 1px; }
+    .event-time .et-value { font-size: 0.82rem; font-weight: 600; font-variant-numeric: tabular-nums; opacity: 0.9; }
 
 
     /* ===== 会場 ===== */
@@ -139,9 +145,12 @@
       <h1 id="hub-title">🏃 からだ年齢 AIドック</h1>
       <div class="header-date" id="today-date"></div>
     </div>
-    <div class="event-time">
-      <div class="et-label">開催時間</div>
-      <div class="et-value" id="event-time-disp">—</div>
+    <div class="header-right">
+      <div class="clock-disp" id="clock">--:--:--</div>
+      <div class="event-time">
+        <div class="et-label">開催時間</div>
+        <div class="et-value" id="event-time-disp">—</div>
+      </div>
     </div>
   </div>
 </header>
@@ -192,8 +201,8 @@
       <div class="flow-icon" style="background:#fff7ed;">🏃</div>
       <div class="flow-meta">
         <div class="flow-label">② ブースA（反復横跳び）</div>
-        <a href="booth-a.html" class="flow-open"
-           style="color:#c2410c; background:#fff7ed;">メールに届いたQRコードをカメラにかざしてください</a>
+        <span class="flow-open"
+           style="color:#c2410c; background:#fff7ed;">メールに届いたQRコードをカメラにかざしてください</span>
       </div>
       <div class="flow-badge" id="badge-2">待機中</div>
     </div>
@@ -225,8 +234,8 @@
       <div class="flow-icon" style="background:#f5f3ff;">🧘</div>
       <div class="flow-meta">
         <div class="flow-label">③ ブースB（バランス・姿勢）</div>
-        <a href="booth-b.html" class="flow-open"
-           style="color:#6d28d9; background:#f5f3ff;">メールに届いたQRコードをカメラにかざしてください</a>
+        <span class="flow-open"
+           style="color:#6d28d9; background:#f5f3ff;">メールに届いたQRコードをカメラにかざしてください</span>
       </div>
       <div class="flow-badge" id="badge-3">待機中</div>
     </div>
@@ -296,8 +305,13 @@
 
   // ===== 設定読み込み =====
   const DEFAULT = { pin:'1234', venues:[], selectedVenue:'', timeMode:'auto',
-                    customFukuY:60, customKata:30, eventStart:'', eventEnd:'' };
-  const cfg = { ...DEFAULT, ...JSON.parse(localStorage.getItem('aidock_settings') || '{}') };
+                    customFukuY:60, customKata:30 };
+  const rawCfg = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
+  const cfg = { ...DEFAULT, ...rawCfg };
+  // 旧形式（文字列配列）→ オブジェクト配列へ移行
+  cfg.venues = (cfg.venues || []).map(v =>
+    typeof v === 'string' ? { name: v, date: '', start: '', end: '' } : v
+  );
 
   // 会場
   const venue = cfg.selectedVenue || '';
@@ -305,16 +319,28 @@
   venueEl.textContent = venue || '（未設定）';
   venueEl.className   = 'val ' + (venue ? 'val-green' : 'val-red');
 
-  // 開催時間
+  // 選択中の会場オブジェクト
+  const venueObj = cfg.venues.find(v => v.name === venue) || null;
+
+  // 開催時間（会場オブジェクトから取得）
   const etDisp = document.getElementById('event-time-disp');
-  if (cfg.eventStart && cfg.eventEnd) {
-    etDisp.textContent = cfg.eventStart + '〜' + cfg.eventEnd;
-  } else if (cfg.eventStart) {
-    etDisp.textContent = cfg.eventStart + '〜';
+  if (venueObj && venueObj.start) {
+    etDisp.textContent = venueObj.start + (venueObj.end ? '〜' + venueObj.end : '〜');
   } else {
     etDisp.textContent = '未設定';
     etDisp.style.opacity = '0.5';
   }
+
+  // ===== 時計 =====
+  function tickClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clock').textContent = hh + ':' + mm + ':' + ss;
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
 
   // ===== 管理者設定への隠しアクセス（タイトルを5回タップ） =====
   let adminTaps = 0, adminTimer;

@@ -365,6 +365,15 @@
   <h2>📝 基本情報の入力</h2>
   <p class="sub">入力した身長・体重は、後からご自宅でも編集できます。</p>
 
+  <!-- 会場と開催日時 -->
+  <div class="field">
+    <label>会場と開催日時<span class="req">★必須</span></label>
+    <select id="venue-select" onchange="selectVenueOption(this.value)"
+      style="width:100%; padding:12px 14px; border:2px solid var(--border); border-radius:10px; font-size:0.95rem; outline:none; background:white; color:var(--text);">
+      <option value="">-- 会場を選択してください --</option>
+    </select>
+  </div>
+
   <!-- 性別 -->
   <div class="field">
     <label>性別<span class="req">★必須</span></label>
@@ -518,10 +527,43 @@
 
   // ===== 状態管理 =====
   const state = {
+    venue: '',
     gender: '',
     year: '', month: '', day: '',
     height: '', weight: '', email: ''
   };
+
+  // ===== 会場ドロップダウン初期化 =====
+  (function buildVenueSelect() {
+    const sel = document.getElementById('venue-select');
+    if (!sel) return;
+    const raw = localStorage.getItem('aidock_settings');
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+    const venues = (cfg.venues || []).map(v =>
+      typeof v === 'string' ? { name: v, date: '', start: '', end: '' } : v
+    );
+    venues.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      let label = v.name;
+      const parts = [];
+      if (v.date)  parts.push(v.date);
+      if (v.start) parts.push(v.start + (v.end ? '〜' + v.end : '〜'));
+      if (parts.length) label += '（' + parts.join(' ') + '）';
+      opt.textContent = label;
+      // adminで選択済みの会場をデフォルト選択
+      if (v.name === cfg.selectedVenue) {
+        opt.selected = true;
+        state.venue = v.name;
+      }
+      sel.appendChild(opt);
+    });
+  })();
+
+  function selectVenueOption(name) {
+    state.venue = name;
+  }
 
   // ===== 生年月日ドロップダウン生成 =====
   (function buildDOB() {
@@ -606,7 +648,9 @@
     state.email  = document.getElementById('email').value.trim();
 
     const errEl = document.getElementById('form-error');
+    state.venue  = document.getElementById('venue-select').value;
     const missing = [];
+    if (!state.venue)           missing.push('会場と開催日時');
     if (!state.gender)          missing.push('性別');
     if (!state.year || !state.month || !state.day) missing.push('生年月日');
     if (!state.height)          missing.push('身長');
@@ -631,6 +675,7 @@
   function buildConfirmTable() {
     const age = calcAge(state.year, state.month, state.day);
     const rows = [
+      ['会場',       state.venue],
       ['性別',       state.gender],
       ['生年月日',   `${state.year}年 ${state.month}月 ${state.day}日`],
       ['年齢',       `${age} 歳`],
@@ -689,7 +734,7 @@
     const records = JSON.parse(localStorage.getItem('aidock_records') || '[]');
     records.push({
       uid, ...state, age, tier: time.label,
-      venue: adminCfg.selectedVenue || '',
+      venue: state.venue || '',
       registeredAt: new Date().toISOString(),
     });
     localStorage.setItem('aidock_records', JSON.stringify(records));
@@ -700,7 +745,7 @@
       year: state.year, month: state.month, day: state.day,
       height: state.height, weight: state.weight,
       email: state.email, tier: time.label,
-      venue: adminCfg.selectedVenue || '',
+      venue: state.venue || '',
       registeredAt: new Date().toISOString(),
     });
 

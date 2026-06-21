@@ -167,14 +167,30 @@
     .venue-item .venue-actions { display: flex; gap: 6px; }
 
     .venue-add-row {
-      display: flex; gap: 8px; margin-top: 10px;
+      display: flex; flex-direction: column; gap: 8px; margin-top: 12px;
+      background: #f8fafc; border-radius: 12px; padding: 14px;
+      border: 1.5px solid var(--border);
     }
-    .venue-add-row input {
-      flex: 1; padding: 10px 12px;
+    .venue-add-row label { font-size: 0.75rem; color: var(--sub); display: block; margin-bottom: 3px; }
+    .venue-add-row input[type="text"],
+    .venue-add-row input[type="date"],
+    .venue-add-row input[type="time"] {
+      width: 100%; padding: 9px 12px;
       border: 1.5px solid var(--border); border-radius: 10px;
       font-size: 0.9rem; outline: none;
     }
     .venue-add-row input:focus { border-color: var(--primary); }
+    .venue-add-time-row { display: flex; gap: 8px; align-items: center; }
+    .venue-add-time-row input { flex: 1; }
+    .venue-add-time-row span { color: var(--sub); font-weight: 700; flex-shrink: 0; }
+
+    .venue-item .venue-datetime {
+      font-size: 0.72rem; color: var(--sub); margin-top: 2px;
+    }
+    .venue-item { flex-direction: column; align-items: flex-start; padding: 12px 14px; }
+    .venue-item .venue-row { display: flex; align-items: center; width: 100%; }
+    .venue-item .venue-name { font-size: 0.9rem; flex: 1; }
+    .venue-item .venue-actions { margin-left: auto; }
 
     .selected-venue-badge {
       background: #dcfce7; border: 1.5px solid #86efac;
@@ -401,26 +417,44 @@
 <!-- ===== メイン設定画面 ===== -->
 <div class="screen fade-in" id="screen-admin">
 
-  <!-- ① 会場名 -->
+  <!-- ① 会場と日時 -->
   <div class="card">
     <div class="section-title">
-      <span class="icon">🏟️</span>会場名の管理
+      <span class="icon">🏟️</span>会場と日時の登録
     </div>
 
     <div id="selected-venue-badge" class="selected-venue-badge" style="display:none">
       <span>✅</span>
-      <span>本日の会場：<b id="selected-venue-name"></b></span>
+      <div>
+        本日の会場：<b id="selected-venue-name"></b><br>
+        <span id="selected-venue-dt" style="font-size:0.75rem; color:#166534;"></span>
+      </div>
     </div>
 
     <p style="font-size:0.8rem; color:var(--sub); margin-bottom:10px;">
-      会場名をタップして「本日の会場」に選択してください。
+      会場をタップして「本日の会場」に選択してください。
     </p>
 
     <div class="venue-list" id="venue-list"></div>
 
     <div class="venue-add-row">
-      <input type="text" id="venue-input" placeholder="新しい会場名を入力" maxlength="30" />
-      <button class="btn-sm btn-sm-primary" onclick="addVenue()">追加</button>
+      <div>
+        <label>会場名</label>
+        <input type="text" id="venue-input" placeholder="例：東京体育館" maxlength="30" />
+      </div>
+      <div>
+        <label>開催日</label>
+        <input type="date" id="venue-date" />
+      </div>
+      <div>
+        <label>開催時間（開始〜終了）</label>
+        <div class="venue-add-time-row">
+          <input type="time" id="venue-start" />
+          <span>〜</span>
+          <input type="time" id="venue-end" />
+        </div>
+      </div>
+      <button class="btn-sm btn-sm-primary" style="width:100%; padding:10px;" onclick="addVenue()">＋ 会場を追加</button>
     </div>
   </div>
 
@@ -504,24 +538,6 @@
         <button class="btn-sm btn-sm-primary" onclick="openBoothUrl('b')">🌐 URLを開く</button>
       </div>
     </div>
-  </div>
-
-  <!-- ③ 開催時間 -->
-  <div class="card">
-    <div class="section-title">
-      <span class="icon">🕐</span>開催時間の設定
-    </div>
-    <p style="font-size:0.8rem; color:var(--sub); margin-bottom:12px;">
-      スタッフハブの画面右上に表示される開催時間を設定します。
-    </p>
-    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-      <input type="time" id="event-start"
-        style="flex:1; padding:10px; border:1.5px solid var(--border); border-radius:10px; font-size:1rem;" />
-      <span style="color:var(--sub); font-weight:700;">〜</span>
-      <input type="time" id="event-end"
-        style="flex:1; padding:10px; border:1.5px solid var(--border); border-radius:10px; font-size:1rem;" />
-    </div>
-    <button class="btn btn-primary" onclick="saveEventTime()">開催時間を保存</button>
   </div>
 
   <!-- ④ 測定時間モード -->
@@ -703,19 +719,26 @@
   // ===== デフォルト設定 =====
   const DEFAULT_SETTINGS = {
     pin:          '1234',
-    venues:       ['東京体育館', '大阪スポーツセンター', 'サンプル会場'],
+    venues:       [
+      { name: '東京体育館',       date: '', start: '', end: '' },
+      { name: '大阪スポーツセンター', date: '', start: '', end: '' },
+      { name: 'サンプル会場',     date: '', start: '', end: '' },
+    ],
     selectedVenue:'',
     timeMode:     'auto',
     customFukuY:  60,
     customKata:   30,
     backSwitch:   false,
-    eventStart:   '',
-    eventEnd:     '',
   };
 
   function loadSettings() {
     const raw = localStorage.getItem('aidock_settings');
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    const loaded = raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    // 旧形式（文字列配列）→ オブジェクト配列へ移行
+    loaded.venues = (loaded.venues || []).map(v =>
+      typeof v === 'string' ? { name: v, date: '', start: '', end: '' } : v
+    );
+    return loaded;
   }
   function saveToStorage(s) {
     localStorage.setItem('aidock_settings', JSON.stringify(s));
@@ -770,13 +793,19 @@
   function renderAll() {
     renderVenues();
     renderMode();
-    renderEventTime();
     renderBackSwitch();
     renderDataSummary();
     generateBoothQrs();
   }
 
-  // ===== 会場名 =====
+  // ===== 会場と日時 =====
+  function fmtVenueDt(v) {
+    const parts = [];
+    if (v.date)  parts.push('📅 ' + v.date);
+    if (v.start) parts.push('🕐 ' + v.start + (v.end ? '〜' + v.end : '〜'));
+    return parts.join('　');
+  }
+
   function renderVenues() {
     const list = document.getElementById('venue-list');
     list.innerHTML = '';
@@ -785,14 +814,20 @@
       list.innerHTML = '<p style="font-size:0.8rem; color:var(--sub); text-align:center; padding:10px;">会場がまだ登録されていません</p>';
     }
 
-    cfg.venues.forEach((name, idx) => {
+    cfg.venues.forEach((v, idx) => {
+      const name = v.name;
+      const isSel = name === cfg.selectedVenue;
       const el = document.createElement('div');
-      el.className = 'venue-item' + (name === cfg.selectedVenue ? ' selected' : '');
+      el.className = 'venue-item' + (isSel ? ' selected' : '');
+      const dt = fmtVenueDt(v);
       el.innerHTML = `
-        <span class="venue-name">${name === cfg.selectedVenue ? '✅ ' : ''}${name}</span>
-        <div class="venue-actions">
-          <button class="btn-sm btn-sm-danger" onclick="event.stopPropagation(); deleteVenue(${idx})">削除</button>
+        <div class="venue-row">
+          <span class="venue-name">${isSel ? '✅ ' : ''}${name}</span>
+          <div class="venue-actions">
+            <button class="btn-sm btn-sm-danger" onclick="event.stopPropagation(); deleteVenue(${idx})">削除</button>
+          </div>
         </div>
+        ${dt ? `<div class="venue-datetime">${dt}</div>` : ''}
       `;
       el.addEventListener('click', () => selectVenue(name));
       list.appendChild(el);
@@ -802,6 +837,8 @@
     if (cfg.selectedVenue) {
       badge.style.display = 'flex';
       document.getElementById('selected-venue-name').textContent = cfg.selectedVenue;
+      const selV = cfg.venues.find(v => v.name === cfg.selectedVenue);
+      document.getElementById('selected-venue-dt').textContent = selV ? fmtVenueDt(selV) : '';
     } else {
       badge.style.display = 'none';
     }
@@ -815,22 +852,27 @@
   }
 
   function addVenue() {
-    const inp = document.getElementById('venue-input');
-    const name = inp.value.trim();
-    if (!name) return;
-    if (cfg.venues.includes(name)) {
+    const name  = document.getElementById('venue-input').value.trim();
+    const date  = document.getElementById('venue-date').value;
+    const start = document.getElementById('venue-start').value;
+    const end   = document.getElementById('venue-end').value;
+    if (!name) { alert('会場名を入力してください。'); return; }
+    if (cfg.venues.some(v => v.name === name)) {
       alert('同じ会場名が既に登録されています。');
       return;
     }
-    cfg.venues.push(name);
+    cfg.venues.push({ name, date, start, end });
     saveToStorage(cfg);
     renderVenues();
-    inp.value = '';
+    document.getElementById('venue-input').value = '';
+    document.getElementById('venue-date').value  = '';
+    document.getElementById('venue-start').value = '';
+    document.getElementById('venue-end').value   = '';
     showBanner(`「${name}」を追加しました`);
   }
 
   function deleteVenue(idx) {
-    const name = cfg.venues[idx];
+    const name = cfg.venues[idx].name;
     if (!confirm(`「${name}」を削除しますか？`)) return;
     if (cfg.selectedVenue === name) cfg.selectedVenue = '';
     cfg.venues.splice(idx, 1);
@@ -852,18 +894,6 @@
   function selectMode(mode) {
     cfg.timeMode = mode;
     renderMode();
-  }
-
-  // ===== 開催時間 =====
-  function renderEventTime() {
-    document.getElementById('event-start').value = cfg.eventStart || '';
-    document.getElementById('event-end').value   = cfg.eventEnd   || '';
-  }
-  function saveEventTime() {
-    cfg.eventStart = document.getElementById('event-start').value || '';
-    cfg.eventEnd   = document.getElementById('event-end').value   || '';
-    saveToStorage(cfg);
-    showBanner('✅ 開催時間を保存しました');
   }
 
   function saveSettings() {
