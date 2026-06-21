@@ -354,12 +354,6 @@
 
   <button class="btn btn-primary" onclick="startQrScan()">📷 カメラでQRスキャン</button>
 
-  <div class="or-divider">または</div>
-
-  <p style="font-size:0.8rem; color:var(--sub); margin-bottom:6px;">QRコードデータを貼り付け（テスト用）</p>
-  <textarea id="manual-qr" placeholder='{"id":"AID-XXX","age":35,"tier":"アイアン世代","fukuY":60,...}'></textarea>
-  <div class="error-msg" id="qr-error">⚠️ QRコードのデータが正しくありません。受付で発行されたQRコードを使用してください。</div>
-  <button class="btn btn-secondary" style="margin-top:10px;" onclick="parseManualQr()">このデータで進む</button>
 </div>
 
 <!-- ===== 画面2：QRスキャナー ===== -->
@@ -492,7 +486,45 @@
 
 <script>
   // ===== GAS設定 =====
-  const GAS_URL = ''; // ← index.htmlと同じURLを貼り付けてください
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwSv6BLD3blMR6zZS5Rt1iaTIhMn9vf3-ynMJ8E6jEmJk73MuSthSPIlGXy91wuCVIV2g/exec'; // ← index.htmlと同じURLを貼り付けてください
+
+  // ===== ブースA AI判定 =====
+  function calcBoothAAI(count, sec, total, tier) {
+    const expectedRPS = tier === 'ゴールド世代' ? 0.5 : tier === 'シルバー世代' ? 0.75 : 1.0;
+    const actualRPS   = sec > 0 ? count / sec : 0;
+
+    // リズム持続スコア
+    const rhythmScore = Math.min(100, Math.max(0, Math.round((actualRPS / expectedRPS) * 65 + 20)));
+    const rhythmAdv   = rhythmScore >= 75
+      ? 'リズムが最後まで安定していました。このペースを維持しましょう。'
+      : rhythmScore >= 55
+      ? '後半にやや失速が見られます。縄跳びやインターバル走が効果的です。'
+      : '後半の失速が大きい傾向です。持久系トレーニングを取り入れましょう。';
+
+    // 左右切り返し効率スコア
+    const lrDiffPct = Math.round(Math.max(3, (100 - total) * 0.18 + 3));
+    const lrScore   = Math.min(100, Math.max(0, 100 - lrDiffPct * 2));
+    const lrAdv     = lrScore >= 75
+      ? '左右の切り返し効率はほぼ均等です。バランスよく動けています。'
+      : lrScore >= 55
+      ? `右→左方向への切り返しが約${lrDiffPct}%遅い傾向です。左足の蹴り出し筋強化を推奨します。`
+      : `切り返し効率の左右差（約${lrDiffPct}%）が大きい。ラダートレーニングが有効です。`;
+
+    // 重心高さ安定性スコア
+    const vertCm    = Math.max(1.5, (100 - total) * 0.06 + 1.5);
+    const vertScore = Math.min(100, Math.max(0, Math.round(100 - (vertCm - 1.5) * 12)));
+    const vertAdv   = vertScore >= 75
+      ? `上下動${vertCm.toFixed(1)}cm：腰高が安定しており、エネルギー効率の良いステップです。`
+      : vertScore >= 55
+      ? `上下動${vertCm.toFixed(1)}cm：ステップ時に軽い上下動があります。腰を低く保つ意識を。`
+      : `上下動${vertCm.toFixed(1)}cm：上下動が大きくエネルギーロスが生じています。ワイドスクワットで改善を。`;
+
+    return {
+      a_ai1_score: rhythmScore, a_ai1_adv: rhythmAdv,
+      a_ai2_score: lrScore,     a_ai2_adv: lrAdv,
+      a_ai3_score: vertScore,   a_ai3_adv: vertAdv,
+    };
+  }
 
   // ===== GAS送信処理 =====
   async function sendToGAS(action, data) {
@@ -831,6 +863,9 @@
 
     // 次のブースへのデータをsessionStorageに保存
     // ※ QRコードでは email が name フィールドに格納されている
+    // ===== ブースA AI判定 =====
+    const aiA = calcBoothAAI(count, sec, total, u.tier);
+
     sessionStorage.setItem('boothA_result', JSON.stringify({
       uid:    u.id,
       email:  u.email  || '',
@@ -842,7 +877,8 @@
       count:  count,
       sec:    sec,
       total:  total,
-      scores
+      scores,
+      ...aiA,
     }));
 
     // GASへブースA測定結果を送信
@@ -851,6 +887,7 @@
       boothA_count: count,
       boothA_sec:   sec,
       boothA_score: total,
+      ...aiA,
     });
   }
 
@@ -870,5 +907,17 @@
     showScreen('screen-start');
   }
 </script>
+
+<!-- ===== 管理者設定に戻るバナー ===== -->
+<div style="position:fixed; bottom:0; left:0; right:0; z-index:999;
+  background:#1e293b; padding:10px 16px; text-align:center;">
+  <a href="admin.html"
+     style="display:inline-block; color:#94a3b8; font-size:0.8rem;
+            text-decoration:none; padding:6px 20px; border-radius:8px;
+            border:1px solid #334155;">
+    ⚙️ 管理者設定に戻る
+  </a>
+</div>
+<div style="height:48px;"></div>
 </body>
 </html>

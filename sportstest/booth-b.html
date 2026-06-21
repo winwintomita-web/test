@@ -350,12 +350,6 @@
 
     <button class="btn btn-primary" onclick="startQrScan()">📷 カメラでQRスキャン</button>
 
-    <div class="or-divider">または</div>
-
-    <p style="font-size:0.8rem; color:var(--sub); margin-bottom:6px;">QRコードデータを貼り付け（テスト用）</p>
-    <textarea id="manual-qr-b" placeholder='{"id":"AID-XXX","em":"test@example.com","g":"M","age":35,"t":0,"fy":60,...}'></textarea>
-    <div class="error-msg" id="qr-error-b">⚠️ QRコードのデータが正しくありません。受付で発行されたQRコードを使用してください。</div>
-    <button class="btn btn-secondary" style="margin-top:10px;" onclick="parseManualQr()">このデータで進む</button>
   </div>
 </div>
 
@@ -1219,5 +1213,17 @@
     window.location.href = 'result.html';
   }
 </script>
+
+<!-- ===== 管理者設定に戻るバナー ===== -->
+<div style="position:fixed; bottom:0; left:0; right:0; z-index:999;
+  background:#1e293b; padding:10px 16px; text-align:center;">
+  <a href="admin.html"
+     style="display:inline-block; color:#94a3b8; font-size:0.8rem;
+            text-decoration:none; padding:6px 20px; border-radius:8px;
+            border:1px solid #334155;">
+    ⚙️ 管理者設定に戻る
+  </a>
+</div>
+<div style="height:48px;"></div>
 </body>
 </html>
