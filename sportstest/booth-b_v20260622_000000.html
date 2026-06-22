@@ -1161,18 +1161,9 @@
     }
     localStorage.setItem('aidock_records', JSON.stringify(allRecords));
 
-    // シート名を構築（会場名＋日付8桁）
-    const _venuesB  = (cfgRaw.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
-    const _selVB    = _venuesB.find(v => v.name === (cfgRaw.selectedVenue || ''));
-    const _evDateB  = (_selVB && _selVB.date) ? _selVB.date.replace(/-/g,'') : '';
-    const _venueB   = cfgRaw.selectedVenue || '';
-    const _sheetNameB = _venueB ? (_venueB + (_evDateB ? '_' + _evDateB : '')) : '';
-
     // GASへ完了データを送信（GAS側でメール自動送信）
     sendToGAS('complete', {
       uid:          prevA?.uid || 'B_ONLY_' + Date.now(),
-      venue:        _venueB,
-      sheetName:    _sheetNameB,
       boothA_count: prevA?.count  ?? null,
       boothA_sec:   prevA?.sec    ?? null,
       boothA_score: prevA?.total  ?? null,

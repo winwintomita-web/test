@@ -881,19 +881,9 @@
       ...aiA,
     }));
 
-    // シート名を構築（会場名＋日付8桁）
-    const _cfgA   = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
-    const _venuesA = (_cfgA.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
-    const _selVA  = _venuesA.find(v => v.name === (_cfgA.selectedVenue || ''));
-    const _evDateA = (_selVA && _selVA.date) ? _selVA.date.replace(/-/g,'') : '';
-    const _venueA  = _cfgA.selectedVenue || '';
-    const _sheetNameA = _venueA ? (_venueA + (_evDateA ? '_' + _evDateA : '')) : '';
-
     // GASへブースA測定結果を送信
     sendToGAS('booth_a', {
       uid:          u.id,
-      venue:        _venueA,
-      sheetName:    _sheetNameA,
       boothA_count: count,
       boothA_sec:   sec,
       boothA_score: total,

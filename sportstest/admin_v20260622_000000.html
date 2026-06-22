@@ -800,17 +800,10 @@
 
   // ===== 会場と日時 =====
   function fmtVenueDt(v) {
-    if (!v.date && !v.start) return '';
-    const weekdays = ['日','月','火','水','木','金','土'];
-    let str = '';
-    if (v.date) {
-      const d = new Date(v.date + 'T00:00:00');
-      str += d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + weekdays[d.getDay()] + '）';
-    }
-    if (v.start) {
-      str += (str ? ' ' : '') + v.start + '〜' + (v.end || '');
-    }
-    return str;
+    const parts = [];
+    if (v.date)  parts.push('📅 ' + v.date);
+    if (v.start) parts.push('🕐 ' + v.start + (v.end ? '〜' + v.end : '〜'));
+    return parts.join('　');
   }
 
   function renderVenues() {

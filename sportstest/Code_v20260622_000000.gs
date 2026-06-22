@@ -1,7 +1,8 @@
 // ===================================================
 // からだ年齢AIドック - Google Apps Script
 // ===================================================
-// 【設定】以下2つを変更してください
+// 【設定】以下3つを変更してください
+const SHEET_NAME      = '測定記録';
 const RESULT_BASE_URL = 'https://hplite.com/test/sportstest/result.html';
 const SPREADSHEET_ID  = '1kU_6f_8Ww0YkxPaD4QIHQxFtarKmvqxKftEkSAO7o6o'; // ← スプレッドシートのURLにある長いIDを貼り付け
 // ===================================================
@@ -32,18 +33,9 @@ function doGet(e) {
   return res(record);
 }
 
-// ===== シート名を構築（会場名＋日付8桁） =====
-function buildSheetName(venue, eventDate) {
-  const name = (venue || '').trim();
-  if (!name) return '測定記録';
-  const d = (eventDate || '').replace(/-/g, '');
-  return d ? name + '_' + d : name;
-}
-
 // ===== 受付データ保存 =====
 function saveRegister(data) {
-  const sheetName = data.sheetName || buildSheetName(data.venue, '');
-  const sheet = getSheet(sheetName);
+  const sheet = getSheet();
   const existing = findRow(sheet, data.uid);
   const row = {
     uid:          data.uid          || '',
@@ -68,15 +60,8 @@ function saveRegister(data) {
 
 // ===== ブースA測定データ保存 =====
 function saveBoothA(data) {
-  let sheet, rowIdx;
-  if (data.sheetName) {
-    sheet  = getSheet(data.sheetName);
-    rowIdx = findRow(sheet, data.uid);
-  } else {
-    const found = findRowAcrossSheets(data.uid);
-    if (found) { sheet = found.sheet; rowIdx = found.rowIdx; }
-    else        { sheet = getSheet(buildSheetName(data.venue, '')); rowIdx = null; }
-  }
+  const sheet  = getSheet();
+  const rowIdx = findRow(sheet, data.uid);
   const boothAData = {
     boothA_count: data.boothA_count !== undefined ? data.boothA_count : '',
     boothA_sec:   data.boothA_sec   !== undefined ? data.boothA_sec   : '',
@@ -97,15 +82,9 @@ function saveBoothA(data) {
 
 // ===== ブースB測定完了データ保存＋メール送信 =====
 function saveComplete(data) {
-  let sheet, rowIdx;
-  if (data.sheetName) {
-    sheet  = getSheet(data.sheetName);
-    rowIdx = findRow(sheet, data.uid);
-  } else {
-    const found = findRowAcrossSheets(data.uid);
-    if (found) { sheet = found.sheet; rowIdx = found.rowIdx; }
-    else        { sheet = getSheet(buildSheetName(data.venue, '')); rowIdx = null; }
-  }
+  const sheet  = getSheet();
+  const rowIdx = findRow(sheet, data.uid);
+  // nullや未定義の値でブースAの既存データを上書きしないよう有効値のみ書き込む
   function val(v) { return (v !== undefined && v !== null && v !== '') ? v : undefined; }
   const measureData = {
     leftHeld:    data.leftHeld    !== undefined ? data.leftHeld    : '',
@@ -122,6 +101,7 @@ function saveComplete(data) {
     completedAt: data.completedAt || new Date().toISOString(),
     emailSent:   '',
   };
+  // ブースAのデータは有効値がある場合のみ上書き（既存データを保護）
   if (val(data.boothA_count) !== undefined) measureData.boothA_count = data.boothA_count;
   if (val(data.boothA_sec)   !== undefined) measureData.boothA_sec   = data.boothA_sec;
   if (val(data.boothA_score) !== undefined) measureData.boothA_score = data.boothA_score;
@@ -131,17 +111,16 @@ function saveComplete(data) {
     appendRow(sheet, { uid: data.uid, ...measureData });
   }
   const record = getRecord(data.uid);
+  // ブースA・B両方のデータが揃っている場合のみメール送信
   const bothComplete = record &&
     record.boothA_count !== '' && record.boothA_count !== null &&
     record.leftHeld     !== '' && record.leftHeld     !== null;
   if (bothComplete && record.email) {
     try {
       sendResultEmail(record);
-      const found2 = findRowAcrossSheets(data.uid);
-      if (found2) updateRow(found2.sheet, found2.rowIdx, { emailSent: 'YES' });
+      updateRow(sheet, findRow(sheet, data.uid), { emailSent: 'YES' });
     } catch (e) {
-      const found2 = findRowAcrossSheets(data.uid);
-      if (found2) updateRow(found2.sheet, found2.rowIdx, { emailSent: 'ERROR: ' + e.message });
+      updateRow(sheet, findRow(sheet, data.uid), { emailSent: 'ERROR: ' + e.message });
     }
   }
 }
@@ -220,31 +199,17 @@ const COL_HEADERS = [
   'completedAt','emailSent',
 ];
 
-function getSheet(sheetName) {
-  const name = (sheetName || '測定記録').trim() || '測定記録';
-  const ss = SPREADSHEET_ID
+function getSheet() {
+  const ss    = SPREADSHEET_ID
     ? SpreadsheetApp.openById(SPREADSHEET_ID)
     : SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(name);
+  let   sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
-    sheet = ss.insertSheet(name);
+    sheet = ss.insertSheet(SHEET_NAME);
     sheet.appendRow(COL_HEADERS);
     sheet.getRange(1, 1, 1, COL_HEADERS.length).setFontWeight('bold');
   }
   return sheet;
-}
-
-// 全シートからuidを横断検索
-function findRowAcrossSheets(uid) {
-  const ss = SPREADSHEET_ID
-    ? SpreadsheetApp.openById(SPREADSHEET_ID)
-    : SpreadsheetApp.getActiveSpreadsheet();
-  const sheets = ss.getSheets();
-  for (const sheet of sheets) {
-    const rowIdx = findRow(sheet, uid);
-    if (rowIdx) return { sheet, rowIdx };
-  }
-  return null;
 }
 
 function findRow(sheet, uid) {
@@ -266,9 +231,9 @@ function updateRow(sheet, rowIdx, obj) {
 }
 
 function getRecord(uid) {
-  const found = findRowAcrossSheets(uid);
-  if (!found) return null;
-  const { sheet, rowIdx } = found;
+  const sheet  = getSheet();
+  const rowIdx = findRow(sheet, uid);
+  if (!rowIdx) return null;
   const vals   = sheet.getRange(rowIdx, 1, 1, COL_HEADERS.length).getValues()[0];
   const record = {};
   COL_HEADERS.forEach((k, i) => { record[k] = vals[i]; });

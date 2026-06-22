@@ -543,20 +543,14 @@
     const venues = (cfg.venues || []).map(v =>
       typeof v === 'string' ? { name: v, date: '', start: '', end: '' } : v
     );
-    const _weekdays = ['日','月','火','水','木','金','土'];
     venues.forEach(v => {
       const opt = document.createElement('option');
       opt.value = v.name;
       let label = v.name;
-      if (v.date || v.start) {
-        let dtStr = '';
-        if (v.date) {
-          const d = new Date(v.date + 'T00:00:00');
-          dtStr += d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + _weekdays[d.getDay()] + '）';
-        }
-        if (v.start) dtStr += (dtStr ? ' ' : '') + v.start + '〜' + (v.end || '');
-        label += '（' + dtStr + '）';
-      }
+      const parts = [];
+      if (v.date)  parts.push(v.date);
+      if (v.start) parts.push(v.start + (v.end ? '〜' + v.end : '〜'));
+      if (parts.length) label += '（' + parts.join(' ') + '）';
       opt.textContent = label;
       // adminで選択済みの会場をデフォルト選択
       if (v.name === cfg.selectedVenue) {
@@ -745,13 +739,6 @@
     });
     localStorage.setItem('aidock_records', JSON.stringify(records));
 
-    // シート名を構築（会場名＋日付8桁）
-    const _cfgRaw  = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
-    const _venues  = (_cfgRaw.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
-    const _selV    = _venues.find(v => v.name === state.venue);
-    const _evDate  = (_selV && _selV.date) ? _selV.date.replace(/-/g,'') : '';
-    const sheetName = state.venue ? (state.venue + (_evDate ? '_' + _evDate : '')) : '';
-
     // GASへ受付データを送信
     sendToGAS('register', {
       uid, gender: state.gender, age,
@@ -759,7 +746,6 @@
       height: state.height, weight: state.weight,
       email: state.email, tier: time.label,
       venue: state.venue || '',
-      sheetName: sheetName,
       registeredAt: new Date().toISOString(),
     });
 
