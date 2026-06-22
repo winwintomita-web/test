@@ -1154,11 +1154,12 @@
       ...(aiB || {}),
     };
 
-    const recIdx = allRecords.findIndex(r => r.uid === (prevA?.uid || ''));
+    const _uidB  = prevA?.uid || userData?.id || '';
+    const recIdx = allRecords.findIndex(r => r.uid === _uidB);
     if (recIdx >= 0) {
       allRecords[recIdx] = { ...allRecords[recIdx], ...measureData };
     } else {
-      allRecords.push({ uid: 'B_ONLY_' + Date.now(), ...measureData });
+      allRecords.push({ uid: _uidB || ('B_ONLY_' + Date.now()), ...measureData });
     }
     localStorage.setItem('aidock_records', JSON.stringify(allRecords));
 
@@ -1172,7 +1173,7 @@
 
     // GASへ完了データを送信（GAS側でメール自動送信）
     sendToGAS('complete', {
-      uid:          prevA?.uid || 'B_ONLY_' + Date.now(),
+      uid:          prevA?.uid || userData?.id || ('B_ONLY_' + Date.now()),
       venue:        _venueB,
       sheetName:    _sheetNameB,
       boothA_count: prevA?.count  ?? null,
