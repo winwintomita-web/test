@@ -701,14 +701,7 @@
     // ユニークID生成
     const uid = 'AID-' + Date.now().toString(36).toUpperCase();
 
-    // シート名を構築（会場名＋日付8桁）— QR生成より前に実行
-    const _cfgRaw  = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
-    const _venues  = (_cfgRaw.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
-    const _selV    = _venues.find(v => v.name === state.venue);
-    const _evDate  = (_selV && _selV.date) ? _selV.date.replace(/-/g,'') : '';
-    const sheetName = state.venue ? (state.venue + (_evDate ? '_' + _evDate : '')) : '';
-
-    // QRコードのデータ（日本語はbase64エンコード：qrcodejs の日本語バグ回避）
+    // QRコードのデータ（ASCII のみ：qrcodejs の日本語バグ回避）
     const gCode = state.gender === '男性' ? 'M' : 'F';
     const tCode = time.label === 'アイアン世代' ? 0 : time.label === 'シルバー世代' ? 1 : 2;
     const qrData = JSON.stringify({
@@ -721,7 +714,6 @@
       t:   tCode,
       fy:  time.fukuY,
       k:   time.kataashi,
-      vn:  sheetName ? btoa(unescape(encodeURIComponent(sheetName))) : undefined,
     });
 
     // QR生成
@@ -729,11 +721,11 @@
     qrBox.innerHTML = '';
     new QRCode(qrBox, {
       text:         qrData,
-      width:        220,
-      height:       220,
+      width:        200,
+      height:       200,
       colorDark:    '#0284c7',
       colorLight:   '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
+      correctLevel: QRCode.CorrectLevel.H,
     });
 
     // ユーザー情報表示
@@ -752,6 +744,13 @@
       registeredAt: new Date().toISOString(),
     });
     localStorage.setItem('aidock_records', JSON.stringify(records));
+
+    // シート名を構築（会場名＋日付8桁）
+    const _cfgRaw  = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
+    const _venues  = (_cfgRaw.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
+    const _selV    = _venues.find(v => v.name === state.venue);
+    const _evDate  = (_selV && _selV.date) ? _selV.date.replace(/-/g,'') : '';
+    const sheetName = state.venue ? (state.venue + (_evDate ? '_' + _evDate : '')) : '';
 
     // GASへ受付データを送信
     sendToGAS('register', {

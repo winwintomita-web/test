@@ -594,16 +594,15 @@
       const GENDER = { M: '男性', F: '女性' };
       const TIER   = ['アイアン世代', 'シルバー世代', 'ゴールド世代'];
       userData = {
-        id:        raw.id,
-        email:     raw.em  || raw.email || raw.name || '',
-        gender:    GENDER[raw.g] || raw.gender || '',
-        age:       raw.age,
-        height:    raw.ht  || raw.height || '',
-        weight:    raw.wt  || raw.weight || '',
-        tier:      (raw.t != null ? TIER[raw.t] : null) || raw.tier || '',
-        fukuY:     raw.fy  ?? raw.fukuY,
-        kata:      raw.k   ?? raw.kata,
-        sheetName: raw.vn  ? decodeURIComponent(escape(atob(raw.vn))) : '',
+        id:     raw.id,
+        email:  raw.em  || raw.email || raw.name || '',
+        gender: GENDER[raw.g] || raw.gender || '',
+        age:    raw.age,
+        height: raw.ht  || raw.height || '',
+        weight: raw.wt  || raw.weight || '',
+        tier:   (raw.t != null ? TIER[raw.t] : null) || raw.tier || '',
+        fukuY:  raw.fy  ?? raw.fukuY,
+        kata:   raw.k   ?? raw.kata,
       };
       if (!userData.tier) throw new Error('invalid');
       errEl.style.display = 'none';
@@ -1162,13 +1161,12 @@
     }
     localStorage.setItem('aidock_records', JSON.stringify(allRecords));
 
-    // シート名：① QRのvn → ② booth-aの引き継ぎ → ③ localStorageの会場設定（フォールバック）
+    // シート名を構築（会場名＋日付8桁）
     const _venuesB  = (cfgRaw.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
     const _selVB    = _venuesB.find(v => v.name === (cfgRaw.selectedVenue || ''));
     const _evDateB  = (_selVB && _selVB.date) ? _selVB.date.replace(/-/g,'') : '';
     const _venueB   = cfgRaw.selectedVenue || '';
-    const _fbSheetB = _venueB ? (_venueB + (_evDateB ? '_' + _evDateB : '')) : '';
-    const _sheetNameB = userData?.sheetName || prevA?.sheetName || _fbSheetB;
+    const _sheetNameB = _venueB ? (_venueB + (_evDateB ? '_' + _evDateB : '')) : '';
 
     // GASへ完了データを送信（GAS側でメール自動送信）
     sendToGAS('complete', {

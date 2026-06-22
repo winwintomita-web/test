@@ -625,16 +625,15 @@
       const GENDER = { M: '男性', F: '女性' };
       const TIER   = ['アイアン世代', 'シルバー世代', 'ゴールド世代'];
       const data = {
-        id:        raw.id,
-        email:     raw.em  || raw.email || raw.name || '',
-        gender:    GENDER[raw.g] || raw.gender || '',
-        age:       raw.age,
-        height:    raw.ht  || raw.height || '',
-        weight:    raw.wt  || raw.weight || '',
-        tier:      (raw.t != null ? TIER[raw.t] : null) || raw.tier || '',
-        fukuY:     raw.fy  ?? raw.fukuY,
-        kata:      raw.k   ?? raw.kata,
-        sheetName: raw.vn  ? decodeURIComponent(escape(atob(raw.vn))) : '',
+        id:     raw.id,
+        email:  raw.em  || raw.email || raw.name || '',
+        gender: GENDER[raw.g] || raw.gender || '',
+        age:    raw.age,
+        height: raw.ht  || raw.height || '',
+        weight: raw.wt  || raw.weight || '',
+        tier:   (raw.t != null ? TIER[raw.t] : null) || raw.tier || '',
+        fukuY:  raw.fy  ?? raw.fukuY,
+        kata:   raw.k   ?? raw.kata,
       };
       if (!data.tier) throw new Error('invalid');
       errEl.style.display = 'none';
@@ -868,29 +867,27 @@
     const aiA = calcBoothAAI(count, sec, total, u.tier);
 
     sessionStorage.setItem('boothA_result', JSON.stringify({
-      uid:       u.id,
-      email:     u.email  || '',
-      gender:    u.gender || '',
-      age:       u.age,
-      height:    u.height || '',
-      weight:    u.weight || '',
-      tier:      u.tier,
-      sheetName: u.sheetName || '',
-      count:     count,
-      sec:       sec,
-      total:     total,
+      uid:    u.id,
+      email:  u.email  || '',
+      gender: u.gender || '',
+      age:    u.age,
+      height: u.height || '',
+      weight: u.weight || '',
+      tier:   u.tier,
+      count:  count,
+      sec:    sec,
+      total:  total,
       scores,
       ...aiA,
     }));
 
-    // シート名：① QRのvn → ② localStorageの会場設定（フォールバック）
-    const _cfgA    = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
+    // シート名を構築（会場名＋日付8桁）
+    const _cfgA   = JSON.parse(localStorage.getItem('aidock_settings') || '{}');
     const _venuesA = (_cfgA.venues || []).map(v => typeof v === 'string' ? {name:v,date:''} : v);
-    const _selVA   = _venuesA.find(v => v.name === (_cfgA.selectedVenue || ''));
+    const _selVA  = _venuesA.find(v => v.name === (_cfgA.selectedVenue || ''));
     const _evDateA = (_selVA && _selVA.date) ? _selVA.date.replace(/-/g,'') : '';
     const _venueA  = _cfgA.selectedVenue || '';
-    const _fbSheetA = _venueA ? (_venueA + (_evDateA ? '_' + _evDateA : '')) : '';
-    const _sheetNameA = u.sheetName || _fbSheetA;
+    const _sheetNameA = _venueA ? (_venueA + (_evDateA ? '_' + _evDateA : '')) : '';
 
     // GASへブースA測定結果を送信
     sendToGAS('booth_a', {
