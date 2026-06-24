@@ -620,8 +620,8 @@
     document.getElementById('ready-user-info').innerHTML = `
       <div class="row"><span>受付ID</span><span>${u.id || '—'}</span></div>
       <div class="row"><span>性別</span><span>${u.gender || '—'}</span></div>
-      <div class="row"><span>年齢</span><span>${u.age} 歳（${u.tier}）</span></div>
-      <div class="row"><span>身長 / 体重</span><span>${u.height}cm / ${u.weight}kg</span></div>
+      <div class="row"><span>年齢区分</span><span>${u.tier}</span></div>
+      <div class="row"><span>身長 / 体重</span><span>*** / ***</span></div>
     `;
     // ブースA測定済み/未測定の判定
     const raw     = sessionStorage.getItem('boothA_result');

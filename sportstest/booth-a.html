@@ -338,6 +338,15 @@
       background: var(--primary);
       transform: scale(1.4);
     }
+
+    /* ブース進捗チップ（準備画面） */
+    .status-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .status-chip .chip-label { font-size: 0.72rem; color: var(--sub); margin-bottom: 4px; }
+    .status-chip .chip-val   { font-size: 0.84rem; font-weight: 700; }
+    .status-chip.next { border: 1.5px solid #93c5fd; background: #eff6ff; }
+    .status-chip.next .chip-val { color: #1d4ed8; }
+    .status-chip.skip { border: 1.5px solid #e2e8f0; background: #fafafa; }
+    .status-chip.skip .chip-val { color: #94a3b8; }
   </style>
 </head>
 <body>
@@ -371,6 +380,17 @@
   <p class="sub">内容を確認して「測定を開始する」を押してください。</p>
 
   <div class="user-badge" id="ready-user-info"></div>
+
+  <div class="status-row">
+    <div class="status-chip next">
+      <div class="chip-label">🏃 ブースA｜反復横跳び</div>
+      <div class="chip-val">これから測定</div>
+    </div>
+    <div class="status-chip skip">
+      <div class="chip-label">🧘 ブースB｜バランス</div>
+      <div class="chip-val">未測定</div>
+    </div>
+  </div>
 
   <!-- 管理者設定モードバッジ -->
   <div id="mode-badge" style="display:none; background:#eff6ff; border:1.5px solid #93c5fd;
@@ -687,8 +707,8 @@
     document.getElementById('ready-user-info').innerHTML = `
       <div class="row"><span>受付ID</span><span>${u.id || '—'}</span></div>
       <div class="row"><span>性別</span><span>${u.gender || '—'}</span></div>
-      <div class="row"><span>年齢</span><span>${u.age} 歳（${u.tier}）</span></div>
-      <div class="row"><span>身長 / 体重</span><span>${u.height}cm / ${u.weight}kg</span></div>
+      <div class="row"><span>年齢区分</span><span>${u.tier}</span></div>
+      <div class="row"><span>身長 / 体重</span><span>*** / ***</span></div>
     `;
     document.getElementById('ready-tier-label').textContent = modeLabel;
     document.getElementById('ready-secs').textContent = measureSec;
