@@ -521,6 +521,20 @@
       if (payload.m)  settings.timeMode      = payload.m;
       if (payload.fy) settings.customFukuY   = payload.fy;
       if (payload.k)  settings.customKata    = payload.k;
+      if (payload.v) {
+        if (!settings.venues) settings.venues = [];
+        const exists = settings.venues.some(v =>
+          (typeof v === 'string' ? v : v.name) === payload.v
+        );
+        if (!exists) {
+          settings.venues.push({
+            name:  payload.v,
+            date:  payload.d || '',
+            start: payload.s || '',
+            end:   payload.e || '',
+          });
+        }
+      }
       localStorage.setItem('aidock_settings', JSON.stringify(settings));
     } catch(e) { /* URLパラメータ不正は無視 */ }
   })();

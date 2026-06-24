@@ -1159,11 +1159,15 @@
 
     document.getElementById('url-gen-warning').style.display = 'none';
 
+    const selVenue = cfg.venues.find(v => v.name === cfg.selectedVenue) || {};
     const payload = {
       v:  cfg.selectedVenue,
       m:  cfg.timeMode,
       fy: cfg.customFukuY  || 60,
       k:  cfg.customKata   || 30,
+      d:  selVenue.date  || '',
+      s:  selVenue.start || '',
+      e:  selVenue.end   || '',
     };
 
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
