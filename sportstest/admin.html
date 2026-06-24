@@ -1165,10 +1165,10 @@
       m:  cfg.timeMode,
       fy: cfg.customFukuY  || 60,
       k:  cfg.customKata   || 30,
-      d:  selVenue.date  || '',
-      s:  selVenue.start || '',
-      e:  selVenue.end   || '',
     };
+    if (selVenue.date)  payload.d = selVenue.date;
+    if (selVenue.start) payload.s = selVenue.start;
+    if (selVenue.end)   payload.e = selVenue.end;
 
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     const basePath = location.href.replace('admin.html', 'index.html').split('?')[0];
@@ -1181,11 +1181,11 @@
     qrBox.innerHTML = '';
     new QRCode(qrBox, {
       text:         _generatedUrl,
-      width:        200,
-      height:       200,
+      width:        280,
+      height:       280,
       colorDark:    '#1e3a8a',
       colorLight:   '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
+      correctLevel: QRCode.CorrectLevel.L,
     });
 
     showBanner(`「${cfg.selectedVenue}」の申込URLを生成しました`);
