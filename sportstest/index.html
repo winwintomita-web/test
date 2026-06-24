@@ -796,7 +796,7 @@
     const sent = await sendQrByEmail({
       to_email:  state.email,
       uid,
-      venue:     adminCfg.selectedVenue || '（会場未設定）',
+      venue:     state.venue || adminCfg.selectedVenue || '（会場未設定）',
       tier:      time.label,
       age,
       fukuy_sec: time.fukuY,
