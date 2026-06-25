@@ -469,6 +469,20 @@
       生成されたQRコードを会場に掲示すると、参加者がスマホで読み取り自分で申し込めます。
     </p>
 
+    <!-- 公開URL設定 -->
+    <div style="background:#f0f9ff; border:1.5px solid #bae6fd; border-radius:12px; padding:14px; margin-bottom:14px;">
+      <p style="font-size:0.82rem; font-weight:700; color:#0369a1; margin-bottom:8px;">🌐 公開先URL（GitHub Pages など）</p>
+      <input type="url" id="public-base-url"
+        placeholder="例: https://winwintomita-web.github.io/test/sportstest/"
+        style="width:100%; padding:9px 12px; border:1.5px solid #bae6fd; border-radius:10px; font-size:0.82rem; outline:none; background:white; margin-bottom:8px;" />
+      <p style="font-size:0.72rem; color:var(--sub); margin-bottom:8px; line-height:1.6;">
+        ※ スマホからアクセスできるURLを入力して保存してください。<br>
+        入力がない場合はこのPCのファイルURLが使われ、スマホで開けません。
+      </p>
+      <button class="btn-sm btn-sm-primary" onclick="savePublicUrl()">💾 このURLを保存する</button>
+      <span id="public-url-saved" style="display:none; font-size:0.75rem; color:#166534; margin-left:8px;">✅ 保存済み</span>
+    </div>
+
     <div class="url-gen-warning" id="url-gen-warning" style="display:none;">
       ⚠️ まず「会場名」を選択してください。
     </div>
@@ -729,6 +743,7 @@
     customFukuY:  60,
     customKata:   30,
     backSwitch:   false,
+    publicBaseUrl: '',
   };
 
   function loadSettings() {
@@ -796,6 +811,27 @@
     renderBackSwitch();
     renderDataSummary();
     generateBoothQrs();
+    renderPublicUrl();
+  }
+
+  // ===== 公開URL設定 =====
+  function renderPublicUrl() {
+    const el = document.getElementById('public-base-url');
+    const badge = document.getElementById('public-url-saved');
+    if (!el) return;
+    if (cfg.publicBaseUrl) {
+      el.value = cfg.publicBaseUrl;
+      if (badge) badge.style.display = 'inline';
+    }
+  }
+
+  function savePublicUrl() {
+    const url = document.getElementById('public-base-url').value.trim();
+    cfg.publicBaseUrl = url;
+    saveToStorage(cfg);
+    const badge = document.getElementById('public-url-saved');
+    if (badge) badge.style.display = url ? 'inline' : 'none';
+    showBanner(url ? '🌐 公開URLを保存しました' : '公開URLをクリアしました');
   }
 
   // ===== 会場と日時 =====
@@ -1176,7 +1212,10 @@
     if (selVenue.end)   payload.e = selVenue.end;
 
     const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
-    const basePath = 'https://winwintomita-web.github.io/test/sportstest/index.html';
+    const publicBase = cfg.publicBaseUrl ? cfg.publicBaseUrl.replace(/\/?$/, '/') : '';
+    const basePath = publicBase
+      ? publicBase + 'index.html'
+      : location.href.replace('admin.html', 'index.html').split('?')[0];
     _generatedUrl = `${basePath}?c=${encoded}`;
 
     document.getElementById('generated-url').textContent = _generatedUrl;
