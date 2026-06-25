@@ -1175,7 +1175,7 @@
     if (selVenue.start) payload.s = selVenue.start;
     if (selVenue.end)   payload.e = selVenue.end;
 
-    const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     const basePath = location.href.replace('admin.html', 'index.html').split('?')[0];
     _generatedUrl = `${basePath}?c=${encoded}`;
 
