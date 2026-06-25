@@ -465,12 +465,12 @@
     </div>
 
     <p style="font-size:0.82rem; color:var(--sub); margin-bottom:12px; line-height:1.7;">
-      会場名を選択してから「生成する」を押してください。<br>
+      会場名・測定モードを設定・保存してから「生成する」を押してください。<br>
       生成されたQRコードを会場に掲示すると、参加者がスマホで読み取り自分で申し込めます。
     </p>
 
-    <div class="url-gen-warning" id="url-gen-warning" style="display:none;">
-      ⚠️ まず「会場名」を選択してください。
+    <div class="url-gen-warning" id="url-gen-warning">
+      ⚠️ まず「会場名」を選択し、「測定時間モード」を保存してください。
     </div>
 
     <button class="btn btn-primary" id="gen-url-btn" onclick="generateVenueUrl()" style="margin-bottom:0;">
@@ -849,17 +849,12 @@
     } else {
       badge.style.display = 'none';
     }
-
-    const warning = document.getElementById('url-gen-warning');
-    if (warning) warning.style.display = cfg.selectedVenue ? 'none' : 'block';
   }
 
   function selectVenue(name) {
     cfg.selectedVenue = name;
     saveToStorage(cfg);
     renderVenues();
-    const warning = document.getElementById('url-gen-warning');
-    if (warning) warning.style.display = 'none';
     showBanner(`「${name}」を本日の会場に設定しました`);
   }
 
