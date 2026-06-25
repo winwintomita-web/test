@@ -351,7 +351,6 @@
     あなたの「からだ年齢」を<br>AIドック（Doctor）が測定します。<br>
     まずは、簡単な受付からお願いします（約1分）。
   </p>
-  <button class="btn btn-primary" onclick="showScreen('screen-form')" style="margin-bottom:20px;">受付をはじめる →</button>
   <ul class="feature-list">
     <li><span class="icon">📋</span><span><b>受付フォーム入力</b><br>性別・生年月日・身長・体重を入力します。</span></li>
     <li><span class="icon">📲</span><span><b>QRコード発行</b><br>測定ブースで使うQRコードをお渡しします。</span></li>
@@ -365,6 +364,8 @@
 <div class="card screen fade-in" id="screen-form">
   <h2>📝 基本情報の入力</h2>
   <p class="sub">入力した身長・体重は、後からご自宅でも編集できます。</p>
+
+  <button class="btn btn-primary" onclick="validateForm()" style="margin-bottom:24px;">確認画面へ →</button>
 
   <!-- 会場と開催日時 -->
   <div class="field">
