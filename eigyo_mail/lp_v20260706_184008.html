@@ -95,7 +95,7 @@
     /* ========== 課題セクション ========== */
     .pain { background: var(--gray-light); }
     .pain-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 18px; margin-top: 40px;
     }
     .pain-card {
@@ -287,10 +287,9 @@
 
     /* ========== レスポンシブ ========== */
     @media (max-width: 640px) {
-      .pain-grid    { grid-template-columns: 1fr; }
-      .sample-wrap  { grid-template-columns: 1fr; }
+      .sample-wrap { grid-template-columns: 1fr; }
       .arrow-center svg { transform: rotate(90deg); }
-      .steps-flow   { gap: 24px; }
+      .steps-flow { gap: 24px; }
       .step-item:not(:last-child)::after { display: none; }
     }
   </style>
