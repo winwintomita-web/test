@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業メール自動送信システム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+      background: #f0f4f8;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #2b6cb0, #4299e1);
+      color: white;
+      padding: 20px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 22px; font-weight: 700; }
+    .header p  { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+    .container { max-width: 820px; margin: 24px auto; padding: 0 16px; }
+
+    /* ステップインジケーター */
+    .steps {
+      display: flex;
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      gap: 8px;
+    }
+    .step {
+      flex: 1; text-align: center; padding: 10px 6px;
+      border-radius: 8px; cursor: pointer;
+      border: 2px solid #e2e8f0; background: #f7fafc;
+      transition: all 0.2s;
+    }
+    .step.active { background: #ebf8ff; border-color: #4299e1; color: #2b6cb0; }
+    .step.done   { background: #f0fff4; border-color: #68d391; color: #276749; }
+    .step-num {
+      display: inline-block; width: 24px; height: 24px;
+      border-radius: 50%; background: #cbd5e0; color: white;
+      font-size: 12px; font-weight: 700; line-height: 24px; margin-bottom: 4px;
+    }
+    .step.active .step-num { background: #4299e1; }
+    .step.done   .step-num { background: #68d391; }
+    .step-label  { font-size: 11px; font-weight: 600; display: block; }
+
+    /* カード */
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .card-title {
+      font-size: 16px; font-weight: 700; color: #2d3748;
+      margin-bottom: 18px; padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* フォーム */
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 6px; }
+    .hint { font-weight: 400; font-size: 11px; color: #718096; margin-left: 6px; }
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 14px; font-family: inherit; color: #2d3748;
+      background: #fafafa; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: #4299e1;
+      box-shadow: 0 0 0 3px rgba(66,153,225,0.15); background: white;
+    }
+    textarea { resize: vertical; min-height: 80px; }
+    .row-2col { display: flex; gap: 16px; }
+    .row-2col .form-group { flex: 1; }
+
+    /* ボタン */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
+    }
+    .btn-primary   { background: #4299e1; color: white; }
+    .btn-primary:hover   { background: #3182ce; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(66,153,225,0.3); }
+    .btn-success   { background: #48bb78; color: white; }
+    .btn-success:hover   { background: #38a169; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(72,187,120,0.3); }
+    .btn-danger    { background: #f56565; color: white; }
+    .btn-danger:hover    { background: #e53e3e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245,101,101,0.3); }
+    .btn-secondary { background: #e2e8f0; color: #4a5568; }
+    .btn-secondary:hover { background: #cbd5e0; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* アラート */
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; line-height: 1.7; }
+    .alert-success { background: #f0fff4; border: 1px solid #9ae6b4; color: #276749; }
+    .alert-error   { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; }
+    .alert-info    { background: #ebf8ff; border: 1px solid #90cdf4; color: #2b6cb0; }
+    .alert-warning { background: #fffff0; border: 1px solid #f6e05e; color: #744210; }
+
+    /* プレビューエリア */
+    .preview-box {
+      background: #f7fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; padding: 18px; margin-top: 12px;
+    }
+    .preview-subject {
+      font-weight: 700; font-size: 15px; color: #2d3748;
+      margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;
+    }
+    .preview-email-tag {
+      display: inline-block; background: #ebf8ff; color: #2b6cb0;
+      border-radius: 4px; padding: 2px 8px; font-size: 12px; margin-bottom: 10px;
+    }
+    .preview-body { font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: #4a5568; }
+
+    /* 結果テーブル */
+    .result-table-wrapper {
+      overflow-x: auto; max-height: 360px; overflow-y: auto;
+      border-radius: 8px; border: 1px solid #e2e8f0;
+    }
+    table  { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: #edf2f7; padding: 10px 14px; text-align: left;
+      font-weight: 600; color: #4a5568; position: sticky; top: 0;
+    }
+    td { padding: 9px 14px; border-top: 1px solid #e2e8f0; color: #2d3748; }
+    tr:hover td { background: #f7fafc; }
+    .s-success { color: #276749; font-weight: 600; }
+    .s-error   { color: #c53030;  font-weight: 600; }
+    .s-draft   { color: #2b6cb0;  font-weight: 600; }
+    .s-skip    { color: #718096; }
+
+    /* ローディング */
+    .loading { display: inline-flex; align-items: center; gap: 8px; color: #718096; font-size: 13px; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid #e2e8f0; border-top-color: #4299e1;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ページ表示制御 */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* 統計バッジ */
+    .stats-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .stat-badge {
+      background: #ebf8ff; border: 1px solid #90cdf4; color: #2b6cb0;
+      border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600;
+    }
+    .stat-badge.g { background: #f0fff4; border-color: #9ae6b4; color: #276749; }
+    .stat-badge.r { background: #fff5f5; border-color: #feb2b2; color: #c53030; }
+    .stat-badge.s { background: #f7fafc; border-color: #cbd5e0; color: #718096; }
+
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 18px 0; }
+    .footer { text-align: center; padding: 24px; font-size: 12px; color: #a0aec0; }
+
+    @media (max-width: 600px) {
+      .row-2col { flex-direction: column; }
+      .steps     { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📧 営業メール自動送信システム</h1>
+  <p>スプレッドシートと連携して、メールを安全に一括送信します</p>
+</div>
+
+<div class="container">
+
+  <!-- ステップインジケーター -->
+  <div class="steps">
+    <div class="step active" id="step-1" onclick="goToPage(1)">
+      <div class="step-num">1</div>
+      <span class="step-label">データ設定</span>
+    </div>
+    <div class="step" id="step-2" onclick="goToPage(2)">
+      <div class="step-num">2</div>
+      <span class="step-label">メール設定</span>
+    </div>
+    <div class="step" id="step-3" onclick="goToPage(3)">
+      <div class="step-num">3</div>
+      <span class="step-label">プレビュー確認</span>
+    </div>
+    <div class="step" id="step-4" onclick="goToPage(4)">
+      <div class="step-num">4</div>
+      <span class="step-label">送信実行</span>
+    </div>
+  </div>
+
+  <!-- ========== ページ1：データ設定 ========== -->
+  <div class="page active" id="page-1">
+    <div class="card">
+      <div class="card-title">📊 宛先データの設定</div>
+
+      <div id="alert-p1"></div>
+
+      <div class="form-group">
+        <label>スプレッドシートのURL
+          <span class="hint">宛先リストが書かれたGoogleスプレッドシートのURLを貼り付けてください</span>
+        </label>
+        <input type="text" id="spreadsheetUrl"
+          placeholder="https://docs.google.com/spreadsheets/d/..." />
+      </div>
+
+      <div class="form-group">
+        <label>本文ドキュメントのURL
+          <span class="hint">メール本文が書かれたGoogleドキュメントのURLを貼り付けてください</span>
+        </label>
+        <input type="text" id="docUrl"
+          placeholder="https://docs.google.com/document/d/..." />
+      </div>
+
+      <div class="alert alert-info" style="margin-top:4px">
+        <strong>📋 スプレッドシートの1行目（見出し）のルール</strong><br>
+        必須の列名：<strong>「メールアドレス」「送信ステータス」</strong>（必ず1行目に書いてください）<br>
+        任意の列名：会社名・担当者名など自由に追加できます。<br>
+        <br>
+        <strong>✨ 敬称の使い方：</strong>
+        「会社名」「担当者名」などの列の<strong>すぐ右隣</strong>に「敬称」という列を作ると、
+        {会社名} が「A株式会社 御中」のように自動で結合されます。<br>
+        <br>
+        <strong>📝 本文への書き方：</strong>
+        例）<code>{会社名}</code>　<code>{担当者名}</code>　のように書くと自動で置き換わります。<br>
+        <br>
+        <strong>☑️ 送信チェック列：</strong>
+        「送信チェック」という列を作り、送りたい行にチェック（TRUE）を入れると、
+        その行だけを送信対象にできます。
+      </div>
+
+      <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="validateStep1()">次へ → メール設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ページ2：メール設定 ========== -->
+  <div class="page" id="page-2">
+    <div class="card">
+      <div class="card-title">✉️ メールの設定</div>
+
+      <div id="alert-p2"></div>
+
+      <div class="form-group">
+        <label>件名
+          <span class="hint">{列名} で置き換えができます（例：{会社名} 御担当者様へのご案内）</span>
+        </label>
+        <input type="text" id="subject" placeholder="例：新サービスのご案内" />
+      </div>
+
+      <div class="row-2col">
+        <div class="form-group">
+          <label>送信モード</label>
+          <select id="sendMode">
+            <option value="下書き保存">📝 下書き保存（安全。Gmailの下書きに保存）</option>
+            <option value="直接送信">⚡ 直接送信（すぐに相手に届く）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>配信停止リンク</label>
+          <select id="unsubscribeLink">
+            <option value="付けない">付けない</option>
+            <option value="付ける">付ける（本文末尾に案内文を追加）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row-2col">
+        <div class="form-group">
+          <label>差出人の名前
+            <span class="hint">空欄の場合はGmailの設定に従います</span>
+          </label>
+          <input type="text" id="senderName" placeholder="例：株式会社〇〇 営業部" />
+        </div>
+        <div class="form-group">
+          <label>1回の最大送信件数
+            <span class="hint">大量送信でペナルティを受けないための上限</span>
+          </label>
+          <input type="number" id="maxCount" value="50" min="1" max="500" />
+        </div>
+      </div>
+
+      <hr>
+
+      <div style="display:flex; justify-content:space-between;">
+        <button class="btn btn-secondary" onclick="goToPage(1)">← 戻る</button>
+        <button class="btn btn-primary" onclick="validateStep2()">次へ → プレビュー確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ページ3：プレビュー確認 ========== -->
+  <div class="page" id="page-3">
+    <div class="card">
+      <div class="card-title">👁️ プレビュー確認</div>
+
+      <div id="alert-p3"></div>
+
+      <div id="preview-loading" style="display:none" class="loading">
+        <div class="spinner"></div> プレビューを生成中...
+      </div>
+
+      <div id="preview-content" style="display:none">
+        <div id="preview-stats" class="stats-row"></div>
+        <div class="preview-box">
+          <div class="preview-subject" id="preview-subject-text"></div>
+          <div class="preview-email-tag" id="preview-email-text"></div>
+          <div class="preview-body" id="preview-body-text"></div>
+        </div>
+        <p style="font-size:12px;color:#718096;margin-top:8px;">
+          ※ 上記は最初の送信対象の方のプレビューです。実際の送信では各行のデータで置き換えが行われます。
+        </p>
+      </div>
+
+      <hr>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn btn-secondary" onclick="goToPage(2)">← 戻る</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="loadPreview()">🔄 プレビュー再読込</button>
+          <button class="btn btn-primary" onclick="goToPage(4)">次へ → 送信実行</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ページ4：送信実行 ========== -->
+  <div class="page" id="page-4">
+    <div class="card">
+      <div class="card-title">🚀 送信実行</div>
+
+      <div id="alert-p4"></div>
+      <div id="send-config-summary"></div>
+
+      <!-- 送信前確認エリア -->
+      <div id="send-confirm-box">
+        <div class="alert alert-warning">
+          <strong>⚠️ 送信前の最終確認</strong><br>
+          「直接送信」モードの場合、実行すると実際にメールが届きます。<br>
+          初めてお使いの場合は必ず「下書き保存」で内容を確認してから「直接送信」に切り替えることをお勧めします。
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:18px;">
+          <input type="checkbox" id="confirmCheck" onchange="updateSendBtn()">
+          <span>上記を確認しました。送信を実行します。</span>
+        </label>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <button class="btn btn-secondary" onclick="goToPage(3)">← 戻る</button>
+          <button class="btn btn-danger" id="btn-send" onclick="executeSend()" disabled>
+            📨 送信開始
+          </button>
+        </div>
+      </div>
+
+      <!-- 処理中 -->
+      <div id="send-progress" style="display:none">
+        <div class="loading" style="justify-content:center;padding:30px 0;flex-direction:column;gap:12px;">
+          <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+          <span id="send-progress-text" style="font-size:14px;text-align:center;">
+            メールを処理中です...<br>件数によっては数分かかります。このページを閉じないでください。
+          </span>
+        </div>
+      </div>
+
+      <!-- 処理結果 -->
+      <div id="send-result" style="display:none">
+        <div id="send-result-alert"></div>
+        <div id="send-result-stats" class="stats-row"></div>
+        <div class="result-table-wrapper" id="result-table-wrapper"></div>
+        <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="resetAndStart()">🔄 最初からやり直す</button>
+          <button class="btn btn-primary"   onclick="continueSend()">🔁 続けて送信（未送信分を再実行）</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">営業メール自動送信システム | Google Apps Script + Gmail</div>
+</div>
+
+<script>
+  var currentPage = 1;
+
+  // ページ遷移
+  function goToPage(num) {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.step').forEach(function(s, i) {
+      s.classList.remove('active', 'done');
+      if (i + 1 < num) s.classList.add('done');
+    });
+    document.getElementById('page-' + num).classList.add('active');
+    document.getElementById('step-' + num).classList.add('active');
+    currentPage = num;
+    window.scrollTo(0, 0);
+
+    if (num === 3) loadPreview();
+    if (num === 4) initSendPage();
+  }
+
+  // アラート表示
+  function showAlert(id, type, msg) {
+    document.getElementById(id).innerHTML =
+      '<div class="alert alert-' + type + '">' + msg.replace(/\n/g, '<br>') + '</div>';
+  }
+  function clearAlert(id) { document.getElementById(id).innerHTML = ''; }
+
+  // 設定値を収集
+  function getConfig() {
+    return {
+      spreadsheetUrl: document.getElementById('spreadsheetUrl').value.trim(),
+      docUrl:         document.getElementById('docUrl').value.trim(),
+      subject:        document.getElementById('subject').value.trim(),
+      sendMode:       document.getElementById('sendMode').value,
+      unsubscribeLink:document.getElementById('unsubscribeLink').value,
+      senderName:     document.getElementById('senderName').value.trim(),
+      maxCount:       document.getElementById('maxCount').value
+    };
+  }
+
+  // ---- ステップ1 バリデーション ----
+  function validateStep1() {
+    var ssUrl  = document.getElementById('spreadsheetUrl').value.trim();
+    var docUrl = document.getElementById('docUrl').value.trim();
+    if (!ssUrl) { showAlert('alert-p1', 'error', 'スプレッドシートのURLを入力してください。'); return; }
+    if (!ssUrl.includes('docs.google.com/spreadsheets')) {
+      showAlert('alert-p1', 'error', 'スプレッドシートのURLが正しくないようです。\nGoogleスプレッドシートのURLをそのまま貼り付けてください。');
+      return;
+    }
+    if (!docUrl) { showAlert('alert-p1', 'error', '本文ドキュメントのURLを入力してください。'); return; }
+    if (!docUrl.includes('docs.google.com/document')) {
+      showAlert('alert-p1', 'error', '本文ドキュメントのURLが正しくないようです。\nGoogleドキュメントのURLをそのまま貼り付けてください。');
+      return;
+    }
+    clearAlert('alert-p1');
+    goToPage(2);
+  }
+
+  // ---- ステップ2 バリデーション ----
+  function validateStep2() {
+    var subject = document.getElementById('subject').value.trim();
+    if (!subject) { showAlert('alert-p2', 'error', '件名を入力してください。'); return; }
+    clearAlert('alert-p2');
+    goToPage(3);
+  }
+
+  // ---- プレビュー読み込み ----
+  function loadPreview() {
+    clearAlert('alert-p3');
+    document.getElementById('preview-loading').style.display = 'flex';
+    document.getElementById('preview-content').style.display = 'none';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        document.getElementById('preview-loading').style.display = 'none';
+        if (!result.success) {
+          showAlert('alert-p3', 'error', '❌ ' + result.message);
+          return;
+        }
+        document.getElementById('preview-stats').innerHTML =
+          '<div class="stat-badge">📊 全データ: ' + result.totalCount + '件</div>' +
+          '<div class="stat-badge g">✅ 送信対象: ' + result.targetCount + '件</div>';
+        document.getElementById('preview-subject-text').textContent = '件名：' + result.subject;
+        document.getElementById('preview-email-text').textContent   = '宛先（例）：' + result.email;
+        document.getElementById('preview-body-text').textContent    = result.body;
+        document.getElementById('preview-content').style.display = 'block';
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('preview-loading').style.display = 'none';
+        showAlert('alert-p3', 'error', '❌ プレビュー生成に失敗しました：' + err.message);
+      })
+      .previewEmail(getConfig());
+  }
+
+  // ---- 送信ページの初期化 ----
+  function initSendPage() {
+    var config = getConfig();
+    var modeClass = config.sendMode === '直接送信' ? 'alert-warning' : 'alert-info';
+    document.getElementById('send-config-summary').innerHTML =
+      '<div class="alert ' + modeClass + '">' +
+      '<strong>送信設定の確認</strong><br>' +
+      '送信モード：<strong>' + config.sendMode + '</strong>　件名：<strong>' + config.subject + '</strong><br>' +
+      '配信停止リンク：' + config.unsubscribeLink + '　最大送信件数：' + config.maxCount + '件</div>';
+    document.getElementById('send-confirm-box').style.display = 'block';
+    document.getElementById('send-progress').style.display    = 'none';
+    document.getElementById('send-result').style.display      = 'none';
+    document.getElementById('confirmCheck').checked = false;
+    document.getElementById('btn-send').disabled    = true;
+    clearAlert('alert-p4');
+  }
+
+  function updateSendBtn() {
+    document.getElementById('btn-send').disabled = !document.getElementById('confirmCheck').checked;
+  }
+
+  // ---- 送信実行 ----
+  function executeSend() {
+    clearAlert('alert-p4');
+    document.getElementById('send-confirm-box').style.display = 'none';
+    document.getElementById('send-progress').style.display    = 'block';
+    document.getElementById('send-result').style.display      = 'none';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        document.getElementById('send-progress').style.display = 'none';
+        document.getElementById('send-result').style.display   = 'block';
+
+        if (!result.success) {
+          showAlert('alert-p4', 'error', '❌ ' + result.message);
+          document.getElementById('send-confirm-box').style.display = 'block';
+          return;
+        }
+
+        var alertType = result.errorCount > 0 ? 'warning' : 'success';
+        document.getElementById('send-result-alert').innerHTML =
+          '<div class="alert alert-' + alertType + '">✅ ' + result.message.replace(/\n/g, '<br>') + '</div>';
+
+        document.getElementById('send-result-stats').innerHTML =
+          '<div class="stat-badge g">✅ 成功: '  + result.successCount + '件</div>' +
+          '<div class="stat-badge r">❌ エラー: ' + result.errorCount   + '件</div>' +
+          '<div class="stat-badge s">⏭️ スキップ: ' + result.skipCount + '件</div>';
+
+        var html = '<table><thead><tr><th>行</th><th>メールアドレス</th><th>ステータス</th></tr></thead><tbody>';
+        result.results.forEach(function(r) {
+          var cls = r.status.includes('成功') ? 's-success'
+                  : r.status.includes('エラー') ? 's-error'
+                  : r.status.includes('下書き') ? 's-draft'
+                  : 's-skip';
+          html += '<tr><td>' + r.row + '</td><td>' + (r.email || '—') + '</td>'
+                + '<td class="' + cls + '">' + r.status + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('result-table-wrapper').innerHTML = html;
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('send-progress').style.display = 'none';
+        showAlert('alert-p4', 'error', '❌ 送信処理でエラーが発生しました：' + err.message);
+        document.getElementById('send-confirm-box').style.display = 'block';
+      })
+      .sendBulkEmails(getConfig());
+  }
+
+  // ---- 未送信分を続けて送信（再実行） ----
+  function continueSend() {
+    document.getElementById('send-result').style.display   = 'none';
+    document.getElementById('send-progress').style.display = 'block';
+    executeSend();
+  }
+
+  // ---- リセット ----
+  function resetAndStart() {
+    goToPage(1);
+  }
+</script>
+</body>
+</html>
