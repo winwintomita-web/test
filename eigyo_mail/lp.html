@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業メール自動送信システム | 営業の手間を、ゼロへ。</title>
+  <style>
+    :root {
+      --blue-dark:  #1a365d;
+      --blue-main:  #2b6cb0;
+      --blue-light: #4299e1;
+      --blue-pale:  #ebf8ff;
+      --green:      #38a169;
+      --green-pale: #f0fff4;
+      --gray-text:  #4a5568;
+      --gray-light: #f7fafc;
+      --border:     #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+      color: #2d3748; line-height: 1.7;
+    }
+
+    /* ========== ナビゲーション ========== */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-size: 15px; font-weight: 800; color: var(--blue-main); }
+    .nav-cta {
+      background: var(--blue-light); color: white;
+      padding: 8px 20px; border-radius: 20px;
+      font-size: 13px; font-weight: 700; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .nav-cta:hover { background: var(--blue-main); }
+
+    /* ========== ヒーローセクション ========== */
+    .hero {
+      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-main) 60%, var(--blue-light) 100%);
+      color: white; padding: 80px 24px 90px; text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 20px; padding: 5px 16px; font-size: 12px; font-weight: 600;
+      margin-bottom: 20px; letter-spacing: 0.5px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 48px); font-weight: 900;
+      line-height: 1.3; margin-bottom: 20px;
+    }
+    .hero h1 span { color: #90cdf4; }
+    .hero p {
+      font-size: clamp(15px, 2vw, 18px); opacity: 0.9;
+      max-width: 600px; margin: 0 auto 36px;
+    }
+    .hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-hero-primary {
+      background: white; color: var(--blue-main);
+      padding: 14px 32px; border-radius: 30px;
+      font-size: 15px; font-weight: 800; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+    .btn-hero-secondary {
+      border: 2px solid rgba(255,255,255,0.6); color: white;
+      padding: 14px 32px; border-radius: 30px;
+      font-size: 15px; font-weight: 700; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,0.1); }
+
+    /* ========== 共通レイアウト ========== */
+    section { padding: 72px 24px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .section-label {
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      color: var(--blue-light); text-transform: uppercase; margin-bottom: 10px;
+    }
+    .section-title { font-size: clamp(22px, 4vw, 34px); font-weight: 800; margin-bottom: 14px; }
+    .section-sub   { font-size: 15px; color: var(--gray-text); max-width: 560px; }
+
+    /* ========== 課題セクション ========== */
+    .pain { background: var(--gray-light); }
+    .pain-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px; margin-top: 40px;
+    }
+    .pain-card {
+      background: white; border-radius: 12px; padding: 24px;
+      border-left: 4px solid #fc8181;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .pain-icon { font-size: 28px; margin-bottom: 10px; }
+    .pain-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #c53030; }
+    .pain-card p  { font-size: 13px; color: var(--gray-text); }
+    .pain-arrow   { text-align: center; font-size: 36px; margin: 32px 0 0; }
+
+    /* ========== 機能セクション ========== */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; margin-top: 44px;
+    }
+    .feature-card {
+      background: white; border-radius: 14px; padding: 28px;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--blue-pale); display: flex; align-items: center;
+      justify-content: center; font-size: 24px; margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p  { font-size: 13px; color: var(--gray-text); line-height: 1.8; }
+
+    /* ========== 使い方ステップ ========== */
+    .how { background: var(--blue-dark); color: white; }
+    .how .section-label  { color: #90cdf4; }
+    .how .section-title  { color: white; }
+    .how .section-sub    { color: rgba(255,255,255,0.7); }
+    .steps-flow {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0; margin-top: 50px; position: relative;
+    }
+    .step-item { text-align: center; padding: 0 16px; position: relative; }
+    .step-item:not(:last-child)::after {
+      content: '→'; position: absolute; right: -10px; top: 28px;
+      font-size: 24px; color: rgba(255,255,255,0.3);
+    }
+    .step-num-circle {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--blue-light); color: white;
+      font-size: 22px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 0 6px rgba(66,153,225,0.25);
+    }
+    .step-item h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .step-item p  { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.7; }
+
+    /* ========== メール例サンプル ========== */
+    .sample { background: var(--gray-light); }
+    .sample-wrap {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      gap: 24px; align-items: center; margin-top: 40px;
+    }
+    .sample-box {
+      background: white; border-radius: 12px; padding: 24px;
+      border: 1.5px solid var(--border); font-size: 13px; line-height: 1.9;
+    }
+    .sample-box .tag {
+      display: inline-block; background: var(--blue-pale); color: var(--blue-main);
+      border-radius: 4px; padding: 1px 7px; font-weight: 700; font-size: 12px;
+    }
+    .sample-box .replaced {
+      background: var(--green-pale); color: var(--green);
+      border-radius: 4px; padding: 1px 7px; font-weight: 700; font-size: 12px;
+    }
+    .sample-label { font-size: 12px; font-weight: 700; color: var(--gray-text); margin-bottom: 10px; }
+    .arrow-center { text-align: center; font-size: 32px; color: var(--blue-light); }
+    .sample-note  { text-align: center; font-size: 12px; color: var(--gray-text); margin-top: 12px; }
+
+    /* ========== 料金プラン ========== */
+    .pricing { background: white; }
+    .plans-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px; margin-top: 44px;
+    }
+    .plan-card {
+      border-radius: 16px; padding: 32px 28px;
+      border: 2px solid var(--border); text-align: center;
+      transition: transform 0.2s;
+    }
+    .plan-card:hover { transform: translateY(-4px); }
+    .plan-card.popular {
+      border-color: var(--blue-light);
+      box-shadow: 0 8px 30px rgba(66,153,225,0.2);
+      position: relative;
+    }
+    .popular-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--blue-light); color: white;
+      font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px;
+    }
+    .plan-name  { font-size: 14px; font-weight: 700; color: var(--gray-text); margin-bottom: 8px; }
+    .plan-price {
+      font-size: 38px; font-weight: 900; color: #2d3748;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .plan-price span { font-size: 14px; font-weight: 500; color: var(--gray-text); }
+    .plan-desc  { font-size: 12px; color: var(--gray-text); margin-bottom: 20px; }
+    .plan-list  { list-style: none; text-align: left; margin-bottom: 24px; }
+    .plan-list li { font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .plan-list li::before { content: '✅ '; }
+    .plan-list li.off::before { content: '❌ '; opacity: 0.5; }
+    .plan-list li.off { opacity: 0.5; }
+    .plan-btn {
+      display: block; width: 100%; padding: 12px;
+      border-radius: 8px; font-size: 14px; font-weight: 700;
+      text-decoration: none; text-align: center;
+      background: var(--blue-pale); color: var(--blue-main);
+      transition: background 0.2s;
+    }
+    .plan-btn:hover  { background: var(--blue-main); color: white; }
+    .plan-card.popular .plan-btn { background: var(--blue-main); color: white; }
+    .plan-card.popular .plan-btn:hover { background: var(--blue-dark); }
+
+    /* ========== FAQ ========== */
+    .faq { background: var(--gray-light); }
+    .faq-list { margin-top: 40px; max-width: 720px; }
+    .faq-item {
+      background: white; border-radius: 10px; margin-bottom: 12px;
+      border: 1.5px solid var(--border); overflow: hidden;
+    }
+    .faq-q {
+      padding: 18px 20px; font-weight: 700; font-size: 14px;
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      user-select: none;
+    }
+    .faq-q::after { content: '＋'; font-size: 18px; color: var(--blue-light); transition: transform 0.2s; }
+    .faq-item.open .faq-q::after { transform: rotate(45deg); }
+    .faq-a {
+      display: none; padding: 0 20px 18px; font-size: 13px;
+      color: var(--gray-text); line-height: 1.8;
+    }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ========== CTA ========== */
+    .cta-section {
+      background: linear-gradient(135deg, var(--blue-main), var(--blue-light));
+      color: white; text-align: center; padding: 80px 24px;
+    }
+    .cta-section h2 { font-size: clamp(22px, 4vw, 34px); font-weight: 800; margin-bottom: 14px; }
+    .cta-section p  { font-size: 15px; opacity: 0.9; margin-bottom: 32px; }
+    .btn-cta {
+      display: inline-block; background: white; color: var(--blue-main);
+      padding: 16px 40px; border-radius: 30px;
+      font-size: 16px; font-weight: 800; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+
+    /* ========== フッター ========== */
+    footer {
+      background: var(--blue-dark); color: rgba(255,255,255,0.6);
+      text-align: center; padding: 28px 24px; font-size: 12px;
+    }
+    footer a { color: rgba(255,255,255,0.7); text-decoration: none; }
+
+    /* ========== レスポンシブ ========== */
+    @media (max-width: 640px) {
+      .sample-wrap { grid-template-columns: 1fr; }
+      .arrow-center { transform: rotate(90deg); }
+      .steps-flow { gap: 24px; }
+      .step-item:not(:last-child)::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ナビゲーション -->
+<nav>
+  <div class="nav-logo">📧 営業メール自動送信システム</div>
+  <a href="#contact" class="nav-cta">お問い合わせ・申し込み</a>
+</nav>
+
+<!-- ヒーローセクション -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">🚀 Google スプレッドシート完全連携</div>
+    <h1>営業の手間を、<span>ゼロへ。</span><br>メール送信を自動化する</h1>
+    <p>
+      スプレッドシートに宛先を入れるだけで、<br>
+      個別の宛名・敬称入りのメールを一括で自動送信。<br>
+      手作業のミスをなくし、営業に集中できます。
+    </p>
+    <div class="hero-btns">
+      <a href="#features"  class="btn-hero-primary">機能を見る</a>
+      <a href="#contact"   class="btn-hero-secondary">無料で試す</a>
+    </div>
+  </div>
+</section>
+
+<!-- 課題セクション -->
+<section class="pain">
+  <div class="container">
+    <div class="section-label">よくあるお悩み</div>
+    <div class="section-title">こんな経験、ありませんか？</div>
+
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">😓</div>
+        <h3>宛名のコピペ作業が大変</h3>
+        <p>「会社名」「担当者名」を一件一件コピーしてメールを作るのに毎回1〜2時間かかる。</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">😱</div>
+        <h3>宛先間違いがこわい</h3>
+        <p>別の会社の名前のまま送ってしまった…という失敗が後を絶たない。</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">😔</div>
+        <h3>途中で止まると最初からやり直し</h3>
+        <p>大量送信中にエラーが出ると、どこまで送ったかわからなくなってパニックになる。</p>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">⏰</div>
+        <h3>営業時間が足りない</h3>
+        <p>メール作業に時間を取られすぎて、本来やるべき営業活動ができていない。</p>
+      </div>
+    </div>
+
+    <div class="pain-arrow">👇</div>
+    <div style="text-align:center;margin-top:16px;font-size:18px;font-weight:800;color:var(--blue-main)">
+      このシステムが、すべて解決します！
+    </div>
+  </div>
+</section>
+
+<!-- 機能セクション -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">主な機能</div>
+    <div class="section-title">あなたの営業を助ける<br>8つの機能</div>
+    <div class="section-sub">難しい設定は一切不要。Googleスプレッドシートに宛先を書くだけで使えます。</div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>スプレッドシート連動</h3>
+        <p>GoogleスプレッドシートのURLを貼るだけで宛先リストを自動読み込み。Excelライクな操作感でデータ管理ができます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✨</div>
+        <h3>自動宛名差し込み</h3>
+        <p>本文に{会社名}{担当者名}と書くだけで、各行のデータに自動置換。列を追加すれば{商品名}なども使えます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎩</div>
+        <h3>敬称の自動付与</h3>
+        <p>「御中」「様」などの敬称を隣の列に書くだけで、「A株式会社 御中」「山田 様」のように自動で結合して送ります。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>下書き保存モード</h3>
+        <p>「直接送信」の前に「下書き保存」で内容を確認できます。初めての方も安心して使い始められます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📎</div>
+        <h3>ファイル添付対応</h3>
+        <p>Google DriveのURLを列に入力するだけで、PDFや画像などのファイルをメールに添付して送れます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>エラーをスキップして続行</h3>
+        <p>1件エラーが出ても止まらずに次の件へ進み、エラーの理由をスプレッドシートに自動記録します。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3>途中再開対応</h3>
+        <p>送信済みの行は自動でスキップ。万が一途中で止まっても、未送信の行だけを狙って再実行できます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚙️</div>
+        <h3>送信件数の上限設定</h3>
+        <p>1回あたりの送信件数に上限をかけられます。Googleのペナルティを防ぎながら安全に大量送信できます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 使い方ステップ -->
+<section id="how" class="how">
+  <div class="container">
+    <div class="section-label">使い方</div>
+    <div class="section-title" style="color:white">たった4ステップで完了</div>
+    <div class="section-sub">初めての方でも迷わず使えるシンプルな画面設計です。</div>
+
+    <div class="steps-flow">
+      <div class="step-item">
+        <div class="step-num-circle">1</div>
+        <h3>データ設定</h3>
+        <p>スプレッドシートと本文ドキュメントのURLを貼り付けるだけ</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">2</div>
+        <h3>メール設定</h3>
+        <p>件名・送信モード・配信停止リンクなどをカンタンに設定</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">3</div>
+        <h3>プレビュー確認</h3>
+        <p>実際に送られるメールの内容を送信前に確認できる</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">4</div>
+        <h3>送信実行</h3>
+        <p>ボタン1つで一括送信。結果はリアルタイムで一覧表示</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- メール例サンプル -->
+<section class="sample">
+  <div class="container">
+    <div class="section-label">変換イメージ</div>
+    <div class="section-title">本文テンプレートが<br>こう変わります</div>
+
+    <div class="sample-wrap">
+      <div>
+        <div class="sample-label">📝 本文テンプレート（Googleドキュメント）</div>
+        <div class="sample-box">
+          <span class="tag">{会社名}</span><br>
+          <span class="tag">{担当者名}</span><br><br>
+          いつもお世話になっております。<br>
+          株式会社〇〇の〇〇です。<br><br>
+          この度は <span class="tag">{商品名}</span> についてのご案内です。<br>
+          ぜひ一度ご検討いただけますと幸いです。
+        </div>
+      </div>
+
+      <div class="arrow-center">➡️</div>
+
+      <div>
+        <div class="sample-label">✉️ 実際に届くメール（1行目の例）</div>
+        <div class="sample-box">
+          <span class="replaced">A株式会社 御中</span><br>
+          <span class="replaced">山田 様</span><br><br>
+          いつもお世話になっております。<br>
+          株式会社〇〇の〇〇です。<br><br>
+          この度は <span class="replaced">新型複合機</span> についてのご案内です。<br>
+          ぜひ一度ご検討いただけますと幸いです。
+        </div>
+      </div>
+    </div>
+    <div class="sample-note">
+      ※ スプレッドシートの列名を増やすだけで、<br>
+      差し込む項目を自由に追加できます。
+    </div>
+  </div>
+</section>
+
+<!-- 料金プラン -->
+<section id="pricing" class="pricing">
+  <div class="container">
+    <div class="section-label">料金プラン</div>
+    <div class="section-title">シンプルな料金体系</div>
+    <div class="section-sub">すべてのプランで初期設定サポート付き。まずはお気軽にお問い合わせください。</div>
+
+    <div class="plans-grid">
+      <div class="plan-card">
+        <div class="plan-name">ライトプラン</div>
+        <div class="plan-price">¥3,000<span>/月</span></div>
+        <div class="plan-desc">小規模な営業活動に</div>
+        <ul class="plan-list">
+          <li>月200通まで送信</li>
+          <li>スプレッドシート連動</li>
+          <li>宛名・敬称の自動差し込み</li>
+          <li class="off">添付ファイル対応</li>
+          <li class="off">優先サポート</li>
+        </ul>
+        <a href="#contact" class="plan-btn">このプランで申し込む</a>
+      </div>
+
+      <div class="plan-card popular">
+        <div class="popular-badge">⭐ 一番人気</div>
+        <div class="plan-name">スタンダードプラン</div>
+        <div class="plan-price">¥8,000<span>/月</span></div>
+        <div class="plan-desc">本格的な営業活動に</div>
+        <ul class="plan-list">
+          <li>月1,000通まで送信</li>
+          <li>スプレッドシート連動</li>
+          <li>宛名・敬称の自動差し込み</li>
+          <li>添付ファイル対応</li>
+          <li class="off">優先サポート</li>
+        </ul>
+        <a href="#contact" class="plan-btn">このプランで申し込む</a>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-name">プレミアムプラン</div>
+        <div class="plan-price">¥15,000<span>/月</span></div>
+        <div class="plan-desc">大規模な営業活動に</div>
+        <ul class="plan-list">
+          <li>送信数無制限</li>
+          <li>スプレッドシート連動</li>
+          <li>宛名・敬称の自動差し込み</li>
+          <li>添付ファイル対応</li>
+          <li>優先サポート</li>
+        </ul>
+        <a href="#contact" class="plan-btn">このプランで申し込む</a>
+      </div>
+    </div>
+
+    <p style="text-align:center;margin-top:24px;font-size:13px;color:var(--gray-text)">
+      ※ 料金はすべて税抜きです。初月は無料でお試しいただけます。<br>
+      ※ 料金・プランは予告なく変更される場合があります。詳細はお問い合わせください。
+    </p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="container">
+    <div class="section-label">よくある質問</div>
+    <div class="section-title">FAQ</div>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">どんなメールアドレスから送られますか？</div>
+        <div class="faq-a">
+          ご利用者様ご自身のGmailアカウントから送信されます。受信者には「あなたのGmailアドレス」の差出人でメールが届くため、信頼感のある送信が可能です。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">スプレッドシートの形式に決まりはありますか？</div>
+        <div class="faq-a">
+          1行目（見出し行）に「メールアドレス」と「送信ステータス」の列が必須です。それ以外の列名（会社名・担当者名など）は自由に設定できます。列を増やすほど本文への差し込み項目も増やせます。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">1日に何通まで送れますか？</div>
+        <div class="faq-a">
+          GmailとGoogle Apps Scriptの制限により、1日あたり約100〜500通が目安です（Googleアカウントの種類によって異なります）。本システムには1回の実行上限設定機能があるため、安全な範囲で使用できます。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">途中でエラーが出たらどうなりますか？</div>
+        <div class="faq-a">
+          1件でエラーが発生しても、システムは止まらず次の件へ進みます。エラーになった行のスプレッドシート「送信ステータス」列にエラー内容が自動記録されるため、後から原因を確認できます。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">使えなくなることはありますか？</div>
+        <div class="faq-a">
+          ライセンスキーの有効期限が切れた場合、またはご契約を解除された場合はご利用いただけなくなります。継続利用のためには期限前にご連絡いただき、更新手続きをお願いします。
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">既存のGoogleアカウントで使えますか？</div>
+        <div class="faq-a">
+          はい、お手持ちのGoogleアカウント（Gmail / Google Workspace）であれば使えます。特別なソフトのインストールは不要で、ブラウザだけで動作します。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="contact">
+  <div class="container">
+    <h2>まずは無料でお試しください</h2>
+    <p>初月無料。設定サポートも付いています。<br>お気軽にお問い合わせください。</p>
+    <a href="mailto:ここに連絡先メールアドレスを入力" class="btn-cta">
+      📩 お問い合わせ・申し込みはこちら
+    </a>
+    <p style="font-size:12px;margin-top:20px;opacity:0.8">
+      返信まで通常1〜2営業日いただいております。
+    </p>
+  </div>
+</section>
+
+<!-- フッター -->
+<footer>
+  <p>© 2026 営業メール自動送信システム | <a href="mailto:ここに連絡先メールアドレスを入力">お問い合わせ</a></p>
+</footer>
+
+<script>
+  function toggleFaq(el) {
+    el.parentElement.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
