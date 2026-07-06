@@ -151,47 +151,6 @@
     .page { display: none; }
     .page.active { display: block; }
 
-    /* ライセンス認証画面 */
-    #license-screen {
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #1a365d, #2b6cb0);
-    }
-    .license-card {
-      background: white; border-radius: 16px; padding: 40px 36px;
-      width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      text-align: center;
-    }
-    .license-logo { font-size: 48px; margin-bottom: 12px; }
-    .license-title { font-size: 20px; font-weight: 700; color: #2d3748; margin-bottom: 6px; }
-    .license-sub   { font-size: 13px; color: #718096; margin-bottom: 28px; }
-    .license-input-wrap { position: relative; margin-bottom: 16px; }
-    #licenseKeyInput {
-      width: 100%; padding: 14px 16px; font-size: 16px; letter-spacing: 2px;
-      border: 2px solid #e2e8f0; border-radius: 10px; text-align: center;
-      font-family: 'Courier New', monospace; font-weight: 700; color: #2d3748;
-      background: #f7fafc; transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    #licenseKeyInput:focus {
-      outline: none; border-color: #4299e1;
-      box-shadow: 0 0 0 3px rgba(66,153,225,0.2); background: white;
-    }
-    #licenseKeyInput::placeholder { font-weight: 400; letter-spacing: 0; color: #a0aec0; font-size: 14px; font-family: inherit; }
-    #btn-license {
-      width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
-      background: linear-gradient(135deg, #2b6cb0, #4299e1);
-      color: white; border: none; border-radius: 10px; cursor: pointer;
-      transition: all 0.2s; font-family: inherit;
-    }
-    #btn-license:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(66,153,225,0.4); }
-    #btn-license:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
-    #license-alert { margin-bottom: 14px; text-align: left; }
-    .license-footer { font-size: 11px; color: #a0aec0; margin-top: 20px; }
-    #license-user-info {
-      background: #f0fff4; border: 1px solid #9ae6b4; color: #276749;
-      border-radius: 8px; padding: 10px 14px; font-size: 13px;
-      margin-bottom: 14px; display: none;
-    }
-
     /* 統計バッジ */
     .stats-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
     .stat-badge {
@@ -212,36 +171,6 @@
   </style>
 </head>
 <body>
-
-<!-- ========== ライセンス認証画面 ========== -->
-<div id="license-screen">
-  <div class="license-card">
-    <div class="license-logo">🔑</div>
-    <div class="license-title">営業メール自動送信システム</div>
-    <div class="license-sub">ご利用にはライセンスキーが必要です</div>
-
-    <div id="license-alert"></div>
-    <div id="license-user-info"></div>
-
-    <div class="license-input-wrap">
-      <input type="text" id="licenseKeyInput"
-        placeholder="LIC-XXXX-XXXX-XXXX"
-        maxlength="20"
-        onkeydown="if(event.key==='Enter') verifyLicense()" />
-    </div>
-
-    <button id="btn-license" onclick="verifyLicense()">
-      ✅ 認証してアプリを起動
-    </button>
-
-    <div class="license-footer">
-      ライセンスキーをお持ちでない方は管理者にお問い合わせください。
-    </div>
-  </div>
-</div>
-
-<!-- ========== メインアプリ（認証後に表示） ========== -->
-<div id="main-app" style="display:none">
 
 <div class="header">
   <h1>📧 営業メール自動送信システム</h1>
@@ -457,85 +386,9 @@
   </div>
 
   <div class="footer">営業メール自動送信システム | Google Apps Script + Gmail</div>
-</div><!-- /#main-app -->
+</div>
 
 <script>
-  // ==========================================
-  // ライセンス認証
-  // ==========================================
-  var STORAGE_KEY = 'eigyo_mail_license_key';
-
-  // ページ読込時：保存済みキーがあれば自動認証
-  window.addEventListener('load', function() {
-    var savedKey = localStorage.getItem(STORAGE_KEY);
-    if (savedKey) {
-      document.getElementById('licenseKeyInput').value = savedKey;
-      verifyLicense(true); // サイレントモードで再確認
-    }
-  });
-
-  function verifyLicense(silent) {
-    var key = document.getElementById('licenseKeyInput').value.trim();
-    if (!key) {
-      showLicenseAlert('error', 'ライセンスキーを入力してください。');
-      return;
-    }
-
-    var btn = document.getElementById('btn-license');
-    btn.disabled = true;
-    btn.textContent = '認証中...';
-    clearLicenseAlert();
-
-    google.script.run
-      .withSuccessHandler(function(result) {
-        btn.disabled = false;
-        btn.textContent = '✅ 認証してアプリを起動';
-
-        if (result.valid) {
-          // 認証成功
-          localStorage.setItem(STORAGE_KEY, key);
-          document.getElementById('license-user-info').style.display = 'block';
-          document.getElementById('license-user-info').innerHTML =
-            '✅ ようこそ、<strong>' + result.userName + '</strong> 様<br>' +
-            'ライセンス有効期限: ' + result.expiry;
-
-          setTimeout(function() {
-            document.getElementById('license-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-          }, silent ? 0 : 1200);
-        } else {
-          // 認証失敗
-          localStorage.removeItem(STORAGE_KEY);
-          if (!silent) {
-            showLicenseAlert('error', '❌ ' + result.message);
-          } else {
-            // 保存済みキーが無効になった場合はサイレントで認証画面を表示するだけ
-            document.getElementById('licenseKeyInput').value = '';
-          }
-        }
-      })
-      .withFailureHandler(function(err) {
-        btn.disabled = false;
-        btn.textContent = '✅ 認証してアプリを起動';
-        if (!silent) {
-          showLicenseAlert('error', '❌ 接続エラーが発生しました: ' + err.message);
-        }
-      })
-      .checkLicense(key);
-  }
-
-  function showLicenseAlert(type, msg) {
-    document.getElementById('license-alert').innerHTML =
-      '<div class="alert alert-' + type + '">' + msg + '</div>';
-  }
-  function clearLicenseAlert() {
-    document.getElementById('license-alert').innerHTML = '';
-    document.getElementById('license-user-info').style.display = 'none';
-  }
-
-  // ==========================================
-  // メインアプリ
-  // ==========================================
   var currentPage = 1;
 
   // ページ遷移

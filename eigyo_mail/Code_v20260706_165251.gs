@@ -3,29 +3,6 @@
 // Google Apps Script バックエンド
 // ==========================================
 
-// ★ライセンスサーバーのURL（管理者がLicenseServer.gsをデプロイした後に設定）★
-var LICENSE_SERVER_URL = 'ここにライセンスサーバーのURLを貼り付けてください';
-
-// ------------------------------------------
-// ライセンスキーを管理者サーバーで確認する
-// ------------------------------------------
-function checkLicense(key) {
-  if (!key || key.trim() === '') {
-    return { valid: false, message: 'ライセンスキーを入力してください。' };
-  }
-  if (LICENSE_SERVER_URL.includes('ここに')) {
-    return { valid: false, message: '管理者の設定が完了していません。Code.gsの LICENSE_SERVER_URL を設定してください。' };
-  }
-  try {
-    var url      = LICENSE_SERVER_URL + '?key=' + encodeURIComponent(key.trim());
-    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    var result   = JSON.parse(response.getContentText());
-    return result;
-  } catch (e) {
-    return { valid: false, message: '認証サーバーへの接続に失敗しました。しばらく待ってから再試行してください。（詳細: ' + e.message + '）' };
-  }
-}
-
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
