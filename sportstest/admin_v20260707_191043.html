@@ -716,18 +716,6 @@
 <div id="save-banner">✅ 設定を保存しました</div>
 
 <script>
-  // ===== GAS設定（index.htmlと同じデプロイURL） =====
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxnjkI5Y-A9SmDrvCZN0NY-A33h9nv_U1JDb7qEJkH_UaC-osvWhAr-SLsTHhQoZoFw/exec';
-
-  async function notifyVenueToGAS(venue, eventDate) {
-    if (!GAS_URL) return;
-    try {
-      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'setVenue', venue, eventDate }) });
-    } catch (e) {
-      console.warn('GAS送信エラー:', e);
-    }
-  }
-
   // ===== デフォルト設定 =====
   const DEFAULT_SETTINGS = {
     pin:          '1234',
@@ -873,9 +861,6 @@
     const warning = document.getElementById('url-gen-warning');
     if (warning) warning.style.display = 'none';
     showBanner(`「${name}」を本日の会場に設定しました`);
-
-    const selV = cfg.venues.find(v => v.name === name) || {};
-    notifyVenueToGAS(name, selV.date || '');
   }
 
   function addVenue() {

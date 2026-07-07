@@ -16,8 +16,6 @@ function doPost(e) {
       saveBoothA(data);
     } else if (data.action === 'complete') {
       saveComplete(data);
-    } else if (data.action === 'setVenue') {
-      saveVenueSelection(data);
     }
     return res({ status: 'ok' });
   } catch (err) {
@@ -40,24 +38,6 @@ function buildSheetName(venue, eventDate) {
   if (!name) return '測定記録';
   const d = (eventDate || '').replace(/-/g, '');
   return d ? name + '_' + d : name;
-}
-
-// ===== 「本日の会場」選択の保存 =====
-function saveVenueSelection(data) {
-  const ss = SPREADSHEET_ID
-    ? SpreadsheetApp.openById(SPREADSHEET_ID)
-    : SpreadsheetApp.getActiveSpreadsheet();
-  const sheetName = '本日の会場設定';
-  let sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    sheet.appendRow(['venue', 'eventDate', 'updatedAt']);
-    sheet.getRange(1, 1, 1, 3).setFontWeight('bold');
-  }
-  sheet.getRange(2, 1, 1, 3).setValues([[data.venue || '', data.eventDate || '', new Date().toISOString()]]);
-
-  // 申込フォームURLと結びつく会場用シートを事前に作成しておく
-  getSheet(buildSheetName(data.venue, data.eventDate));
 }
 
 // ===== 受付データ保存 =====
