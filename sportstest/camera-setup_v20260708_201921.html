@@ -37,47 +37,6 @@
     #header h1 { font-size: 0.95rem; font-weight: 700; }
     #header p  { font-size: 0.72rem; opacity: 0.85; margin-top: 3px; line-height: 1.5; }
 
-    #dist-panel {
-      position: fixed;
-      top: 78px;
-      left: 0; right: 0;
-      z-index: 10;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      padding: 0 16px;
-      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-    }
-    .dist-item {
-      background: rgba(0, 0, 0, 0.65);
-      border-radius: 10px;
-      padding: 6px 10px;
-      color: #fff;
-      font-size: 0.7rem;
-      text-align: center;
-    }
-    .dist-item label { display: block; opacity: 0.85; margin-bottom: 3px; }
-    .dist-item input {
-      width: 64px;
-      font-size: 0.85rem;
-      text-align: center;
-      border: none;
-      border-radius: 6px;
-      padding: 3px 2px;
-    }
-    #fit-warning {
-      position: fixed;
-      top: 128px;
-      left: 0; right: 0;
-      z-index: 10;
-      text-align: center;
-      color: #fde047;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-      padding: 0 16px;
-    }
-
     #ok-btn {
       position: fixed;
       bottom: 36px;
@@ -137,18 +96,6 @@
   <p id="hd-desc">ガイドに全身が収まるようカメラを調整し、固定してください</p>
 </div>
 
-<div id="dist-panel">
-  <div class="dist-item">
-    <label for="cam-height">三脚の高さ(cm)</label>
-    <input type="number" id="cam-height" min="30" max="200" step="1" inputmode="numeric" />
-  </div>
-  <div class="dist-item">
-    <label for="cam-dist">人との距離(cm)</label>
-    <input type="number" id="cam-dist" min="100" max="600" step="1" inputmode="numeric" />
-  </div>
-</div>
-<div id="fit-warning"></div>
-
 <button id="ok-btn" onclick="goNext()">✅ この位置でOK</button>
 
 <div id="error-screen">
@@ -176,56 +123,6 @@
   const ctx    = canvas.getContext('2d');
   let   animId = null;
 
-  /* ---------- 実寸ガイド計算 ----------
-     ※ スマホ機種によりカメラの画角(見える範囲の広さ)は異なるため、
-        一般的な内カメラを想定した概算の水平画角(60°)を基準に計算しています。
-        実際の見え方とズレる場合は、下の「三脚の高さ」「人との距離」を
-        現場に合わせて微調整してください。                                */
-  const HFOV_DEG = 60;
-  const heightKey = 'aidock_camsetup_height';
-  const distKey   = 'aidock_camsetup_dist';
-
-  let camHeightCm = parseFloat(localStorage.getItem(heightKey)) || 100;
-  let camDistCm   = parseFloat(localStorage.getItem(distKey))   || 250;
-
-  const heightInput = document.getElementById('cam-height');
-  const distInput   = document.getElementById('cam-dist');
-  heightInput.value = camHeightCm;
-  distInput.value   = camDistCm;
-
-  heightInput.addEventListener('input', () => {
-    const v = parseFloat(heightInput.value);
-    if (v > 0) { camHeightCm = v; localStorage.setItem(heightKey, v); }
-  });
-  distInput.addEventListener('input', () => {
-    const v = parseFloat(distInput.value);
-    if (v > 0) { camDistCm = v; localStorage.setItem(distKey, v); }
-  });
-
-  /* 現在の三脚高さ・距離から、画面上の実寸(cm→px)換算を求める */
-  function computeGeometry(W, H) {
-    const hFovRad = HFOV_DEG * Math.PI / 180;
-    const halfWidthCm = camDistCm * Math.tan(hFovRad / 2);
-    const pxPerCmX = (W / 2) / halfWidthCm;
-
-    const vFovRad = 2 * Math.atan(Math.tan(hFovRad / 2) * (H / W));
-    const halfHeightCm = camDistCm * Math.tan(vFovRad / 2);
-    const pxPerCmY = (H / 2) / halfHeightCm;
-
-    const groundY = H / 2 + camHeightCm * pxPerCmY;
-    const y170    = H / 2 - (170 - camHeightCm) * pxPerCmY;
-    const y200    = H / 2 - (200 - camHeightCm) * pxPerCmY;
-
-    let warning = '';
-    if (y200 < 0) {
-      warning = '⚠️ この設置だと200cmの人が画角に収まりません。カメラをもっと離すか、三脚を低くしてください';
-    } else if (groundY > H) {
-      warning = '⚠️ 地面が画角の外にあります。カメラを少し下向きにするか、三脚を低くしてください';
-    }
-
-    return { pxPerCmX, pxPerCmY, groundY, y170, y200, warning };
-  }
-
   /* ---------- カメラ起動 ---------- */
   async function startCamera() {
     try {
@@ -249,20 +146,18 @@
   function loop() {
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    const geo = computeGeometry(W, H);
-    booth === 'a' ? drawBoothA(W, H, geo) : drawBoothB(W, H, geo);
-    document.getElementById('fit-warning').textContent = geo.warning;
+    booth === 'a' ? drawBoothA(W, H) : drawBoothB(W, H);
     animId = requestAnimationFrame(loop);
   }
 
   /* ---------- ブースA オーバーレイ ---------- */
-  function drawBoothA(W, H, geo) {
-    const groundY = geo.groundY;
+  function drawBoothA(W, H) {
+    const groundY = H * 0.80;
 
-    // 3本のテープライン（正面から見た反復横跳びの左・中・右ライン。中央から左右それぞれ実寸1m）
+    // 3本のテープライン（正面から見た反復横跳びの左・中・右ライン）
+    const xL = W * 0.25;
     const xC = W * 0.50;
-    const xL = xC - 100 * geo.pxPerCmX;
-    const xR = xC + 100 * geo.pxPerCmX;
+    const xR = W * 0.75;
     const tapeH = H * 0.07;
     const tapeW = 6;
 
@@ -313,16 +208,13 @@
     ctx.font         = `${Math.max(10, Math.round(W * 0.018))}px sans-serif`;
     ctx.fillText('── 地面', 14, groundY - 5);
 
-    // 200cmライン（このラインまで画角に入っていればOK）
-    drawUpperLimitLine(W, geo.y200);
-
-    // 人型シルエット（中央に配置。170cm基準）
-    drawPerson(W, H, xC, groundY, groundY - geo.y170);
+    // 人型シルエット（中央に配置）
+    drawPerson(W, H, xC, groundY, 0.57);
   }
 
   /* ---------- ブースB オーバーレイ ---------- */
-  function drawBoothB(W, H, geo) {
-    const groundY = geo.groundY;
+  function drawBoothB(W, H) {
+    const groundY = H * 0.82;
 
     // 地面ライン（破線）
     ctx.save();
@@ -363,35 +255,13 @@
     ctx.font         = `bold ${Math.max(11, Math.round(W * 0.02))}px sans-serif`;
     ctx.fillText('立ち位置', cx, groundY + 7);
 
-    // 200cmライン（このラインまで画角に入っていればOK）
-    drawUpperLimitLine(W, geo.y200);
-
-    // 人型シルエット（170cm基準）
-    drawPerson(W, H, cx, groundY, groundY - geo.y170);
-  }
-
-  /* ---------- 200cm上限ライン ---------- */
-  function drawUpperLimitLine(W, y200) {
-    if (y200 < 0 || y200 > canvas.height) return;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(96, 250, 180, 0.55)';
-    ctx.lineWidth   = 2;
-    ctx.setLineDash([4, 6]);
-    ctx.beginPath();
-    ctx.moveTo(0, y200);
-    ctx.lineTo(W, y200);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.textAlign    = 'left';
-    ctx.textBaseline = 'bottom';
-    ctx.fillStyle    = 'rgba(96, 250, 180, 0.85)';
-    ctx.font         = `${Math.max(10, Math.round(W * 0.018))}px sans-serif`;
-    ctx.fillText('── 200cm(上限)', 14, y200 - 4);
+    // 人型シルエット
+    drawPerson(W, H, cx, groundY, 0.62);
   }
 
   /* ---------- 人型シルエット ---------- */
-  function drawPerson(W, H, cx, groundY, ph) {
+  function drawPerson(W, H, cx, groundY, heightRatio) {
+    const ph = H * heightRatio;
     const s  = ph / 170;
     const a  = 0.20;
 
