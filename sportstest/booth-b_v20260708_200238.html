@@ -564,7 +564,7 @@
     showScreen('screen-scan');
     qrScanner = new Html5Qrcode('qr-reader-b');
     qrScanner.start(
-      { facingMode: 'user' },
+      { facingMode: 'environment' },
       { fps: 10, qrbox: { width: 250, height: 250 } },
       (text) => {
         qrScanner.stop().catch(() => {});
@@ -799,7 +799,7 @@
   async function startCamera() {
     try {
       camStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width:{ ideal:640 }, height:{ ideal:480 } },
+        video: { facingMode: 'environment', width:{ ideal:640 }, height:{ ideal:480 } },
         audio: false
       });
       document.getElementById('cam-video').srcObject = camStream;
