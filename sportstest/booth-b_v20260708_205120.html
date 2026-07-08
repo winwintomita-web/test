@@ -812,8 +812,7 @@
   async function startCamera() {
     try {
       camStream = await navigator.mediaDevices.getUserMedia({
-        // 全身が画角に収まりやすいよう縦長(portrait)の解像度を優先
-        video: { facingMode: 'user', width:{ ideal:720 }, height:{ ideal:1280 } },
+        video: { facingMode: 'user', width:{ ideal:640 }, height:{ ideal:480 } },
         audio: false
       });
       document.getElementById('cam-video').srcObject = camStream;
@@ -1077,7 +1076,7 @@
     showPhotoCd('1'); playBeep(660,0.12,0.35); await speakAsync('1。');
     if (state.aborted) return;
     hidePhotoCd();
-    await capturePhoto(view);
+    capturePhoto(view);
     await sleep(2500);
   }
 
@@ -1133,74 +1132,8 @@
     fn();
   }
 
-  // ===== 姿勢推定を1回だけ実行（撮影した写真の骨格線重ね合わせ用） =====
-  function detectPoseOnce(imageSource) {
-    return new Promise((resolve) => {
-      try {
-        if (!poseDetectorB) {
-          poseDetectorB = new Pose({
-            locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`,
-          });
-          poseDetectorB.setOptions({
-            modelComplexity: 0,
-            smoothLandmarks: false,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-          });
-        }
-        poseDetectorB.onResults((results) => {
-          poseDetectorB.onResults(onPoseResultsB); // 片足立ち検出用に戻す
-          resolve(results.poseLandmarks || null);
-        });
-        poseDetectorB.send({ image: imageSource });
-      } catch (e) {
-        resolve(null);
-      }
-    });
-  }
-
-  // ===== 骨格線（姿勢の棒）を写真に重ねて描画 =====
-  const POSE_CONNECTIONS_B = [
-    [11,12],[11,23],[12,24],[23,24],
-    [11,13],[13,15],[12,14],[14,16],
-    [23,25],[25,27],[27,29],[29,31],[27,31],
-    [24,26],[26,28],[28,30],[30,32],[28,32],
-  ];
-  function drawSkeletonOnPhoto(ctx, lm, w, h) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.9)';
-    ctx.lineWidth = Math.max(2, w * 0.006);
-    ctx.lineCap = 'round';
-    POSE_CONNECTIONS_B.forEach(([a, b]) => {
-      const pa = lm[a], pb = lm[b];
-      if (!pa || !pb || pa.visibility < 0.3 || pb.visibility < 0.3) return;
-      ctx.beginPath();
-      ctx.moveTo(pa.x * w, pa.y * h);
-      ctx.lineTo(pb.x * w, pb.y * h);
-      ctx.stroke();
-    });
-
-    ctx.fillStyle = 'rgba(236, 72, 153, 0.95)';
-    [11,12,13,14,15,16,23,24,25,26,27,28,29,30,31,32].forEach(i => {
-      const p = lm[i];
-      if (!p || p.visibility < 0.3) return;
-      ctx.beginPath();
-      ctx.arc(p.x * w, p.y * h, Math.max(2, w * 0.008), 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // 頭
-    const nose = lm[0];
-    if (nose && nose.visibility > 0.3) {
-      ctx.beginPath();
-      ctx.arc(nose.x * w, nose.y * h, Math.max(6, w * 0.02), 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
   // ===== 写真撮影（view: 'front' または 'side'） =====
-  async function capturePhoto(view = 'front') {
+  function capturePhoto(view = 'front') {
     playShutter();
 
     // カメラフラッシュ演出
@@ -1214,13 +1147,7 @@
     const canvas = document.getElementById('cap-canvas');
     canvas.width  = video.videoWidth  || 480;
     canvas.height = video.videoHeight || 640;
-    const cctx = canvas.getContext('2d');
-    cctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // 姿勢の骨格線を重ねる（提出用の見た目のみ。検出できなければそのまま）
-    const landmarks = await detectPoseOnce(canvas);
-    if (landmarks) drawSkeletonOnPhoto(cctx, landmarks, canvas.width, canvas.height);
-
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
     if (view === 'side') {
