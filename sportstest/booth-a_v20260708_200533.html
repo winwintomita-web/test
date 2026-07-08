@@ -684,14 +684,14 @@
 
     let modeLabel = '';
     if (timeMode === 'standard') {
-      measureSec = 20;
+      measureSec = 60;
       modeLabel  = `⏱️ 標準モード（全年齢一律 ${measureSec}秒）`;
     } else if (timeMode === 'custom') {
-      measureSec = parseInt(cfg.customFukuY) || 20;
+      measureSec = parseInt(cfg.customFukuY) || 60;
       modeLabel  = `⏱️ カスタムモード（管理者設定：${measureSec}秒）`;
     } else {
       // auto：QRコードの年齢区分をそのまま使用
-      measureSec = u.fukuY || 20;
+      measureSec = u.fukuY || 60;
       modeLabel  = `⏱️ 自動年齢切替（${u.tier} → ${measureSec}秒）`;
     }
 
