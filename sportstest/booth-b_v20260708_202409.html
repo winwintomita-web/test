@@ -332,8 +332,7 @@
       font-size:0.85rem; line-height:1.8; color:#7c2d12;
       margin-bottom:18px;
     }
-    #result-photo, #result-photo-side { width:100%; border-radius:10px; display:none; margin-top:8px; }
-    .photo-label { font-size:0.75rem; color:var(--sub); margin-top:6px; }
+    #result-photo { width:100%; border-radius:10px; display:none; margin-top:8px; }
   </style>
 </head>
 <body>
@@ -389,7 +388,7 @@
       ① キャリブレーション（音声ガイドのみ・自動）<br>
       ② 左足 30秒片足立ち<br>
       ③ 右足 30秒片足立ち<br>
-      ④ 姿勢写真 自動撮影（正面→横向き、それぞれ3・2・1・カシャッ）
+      ④ 姿勢写真 自動撮影（3・2・1・カシャッ）
     </div>
 
     <button class="btn btn-primary" id="start-btn" onclick="startFlow()">▶ 測定を開始する（カメラ起動）</button>
@@ -476,10 +475,7 @@
     <!-- 姿勢 -->
     <div class="result-section">
       <h3>🧍 姿勢分析（AIシミュレーション）</h3>
-      <div class="photo-label">正面</div>
-      <img id="result-photo" alt="姿勢写真（正面）" />
-      <div class="photo-label">横向き</div>
-      <img id="result-photo-side" alt="姿勢写真（横向き）" />
+      <img id="result-photo" alt="姿勢写真" />
       <div class="result-note" id="posture-note"></div>
     </div>
 
@@ -548,8 +544,6 @@
     rightHeld: 0,
     hasPhoto:  false,
     photoUrl:  null,
-    hasPhotoSide: false,
-    photoUrlSide: null,
     prevA:     null,
     aborted:   false,
   };
@@ -950,41 +944,16 @@
     if (state.aborted) return;
     hideTimer();
 
-    // ── 姿勢写真（正面） ──
-    setPhase('姿勢写真（正面）');
+    // ── 姿勢写真 ──
+    setPhase('姿勢写真');
     setInstruction('姿勢写真を撮ります\n正面を向いて自然に立ってください');
     playChime();
     await speakAsync('右足終了です。大変お疲れさまでした。次に姿勢写真を撮ります。そのままの位置で、正面を向いて、手を自然に下ろしてください。');
     if (state.aborted) return;
     await sleep(2500);
 
-    await runPhotoCountdown('front', '正面を向いて自然に立ってください');
-    if (state.aborted) return;
-
-    // ── 姿勢写真（横向き） ──
-    setPhase('姿勢写真（横向き）');
-    setInstruction('続けて横向きの写真を撮ります\n体を横に向けてください（左右どちらでも構いません）');
-    await speakAsync('続いて、横向きの姿勢写真を撮ります。体を横に向けて、自然に立ってください。');
-    if (state.aborted) return;
-    await sleep(2500);
-
-    await runPhotoCountdown('side', '横を向いて自然に立ってください');
-    if (state.aborted) return;
-
-    // カメラ停止（両方の撮影が終わってから）
-    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
-    document.getElementById('cam-video').style.display = 'none';
-
-    // ── 結果へ ──
-    if (state.aborted) return;
-    buildResult();
-    showScreen('screen-result');
-  }
-
-  // ===== 撮影カウントダウン（正面／横向き共通） =====
-  async function runPhotoCountdown(view, poseText) {
     // 5秒前カウントダウン
-    setInstruction('5秒後に撮影します\n' + poseText);
+    setInstruction('5秒後に撮影します\n正面を向いて自然に立ってください');
     showPhotoCd('5'); playBeep(440, 0.1, 0.25); await speakAsync('5秒前。');
     if (state.aborted) return;
     showPhotoCd('4'); playBeep(440, 0.1, 0.22); await sleep(1000);
@@ -999,8 +968,13 @@
     showPhotoCd('1'); playBeep(660,0.12,0.35); await speakAsync('1。');
     if (state.aborted) return;
     hidePhotoCd();
-    capturePhoto(view);
+    capturePhoto();
     await sleep(2500);
+
+    // ── 結果へ ──
+    if (state.aborted) return;
+    buildResult();
+    showScreen('screen-result');
   }
 
   // ===== バランスタイマー（Date.now()ベース・高精度） =====
@@ -1051,8 +1025,8 @@
     fn();
   }
 
-  // ===== 写真撮影（view: 'front' または 'side'） =====
-  function capturePhoto(view = 'front') {
+  // ===== 写真撮影 =====
+  function capturePhoto() {
     playShutter();
 
     // カメラフラッシュ演出
@@ -1068,14 +1042,8 @@
     canvas.height = video.videoHeight || 640;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-    if (view === 'side') {
-      state.photoUrlSide = dataUrl;
-      state.hasPhotoSide = !!dataUrl;
-    } else {
-      state.photoUrl = dataUrl;
-      state.hasPhoto = !!dataUrl;
-    }
+    state.photoUrl = dataUrl;
+    state.hasPhoto = !!dataUrl;
 
     // プレビュー
     const prev = document.getElementById('captured-preview');
@@ -1083,8 +1051,12 @@
     prev.style.display = 'block';
     prev.style.maxHeight = '120px';
     prev.style.objectFit = 'cover';
-    setInstruction(view === 'side' ? '横向きの撮影をしました ✓' : '正面の撮影をしました ✓');
+    setInstruction('撮影しました ✓');
     setStatus('写真を保存しています...');
+
+    // カメラ停止
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+    video.style.display = 'none';
   }
 
   // ===== 結果生成 =====
@@ -1118,19 +1090,14 @@
     else balNote = `✅ 左右差 <b>${diff}秒</b> でほぼ均等。良好なバランスです。`;
     document.getElementById('bal-note').innerHTML = balNote + `<br>バランススコア：<b>${balScore}点 / 100点</b>`;
 
-    // 姿勢写真（正面・横向き）
+    // 姿勢写真
     if (state.hasPhoto && state.photoUrl) {
       const rp = document.getElementById('result-photo');
       rp.src = state.photoUrl;
       rp.style.display = 'block';
     }
-    if (state.hasPhotoSide && state.photoUrlSide) {
-      const rps = document.getElementById('result-photo-side');
-      rps.src = state.photoUrlSide;
-      rps.style.display = 'block';
-    }
     document.getElementById('posture-note').innerHTML =
-      (state.hasPhoto || state.hasPhotoSide)
+      state.hasPhoto
         ? 'AIが姿勢を解析中です（本番版でスコアが表示されます）。'
         : '姿勢写真はスキップされました。';
 
@@ -1160,7 +1127,7 @@
       document.getElementById('result-sub').textContent = `${prevA.tier || ''}の2ブース測定が完了しました。`;
       sessionStorage.setItem('final_result', JSON.stringify({
         ...prevA, leftHeld: ls, rightHeld: rs, balScore, combined, aiCombined,
-        hasPhoto: state.hasPhoto, hasPhotoSide: state.hasPhotoSide, ...aiB,
+        hasPhoto: state.hasPhoto, ...aiB,
       }));
     } else {
       document.getElementById('total-num').textContent = balScore;
@@ -1184,7 +1151,6 @@
       combined:     combined,
       aiCombined:   aiCombined,
       hasPhoto:     state.hasPhoto,
-      hasPhotoSide: state.hasPhotoSide,
       completedAt:  new Date().toISOString(),
       ...(aiB || {}),
     };
@@ -1240,7 +1206,7 @@
 
   // ===== リセット =====
   function resetAll() {
-    Object.assign(state, { leftHeld:0, rightHeld:0, hasPhoto:false, photoUrl:null, hasPhotoSide:false, photoUrlSide:null, prevA:null, aborted:false });
+    Object.assign(state, { leftHeld:0, rightHeld:0, hasPhoto:false, photoUrl:null, prevA:null, aborted:false });
     resolveBalance = null;
     userData = null;
     document.getElementById('start-btn').disabled = false;
@@ -1253,12 +1219,9 @@
 
   // ===== 完了 → レポートへ =====
   function goComplete() {
-    // 姿勢写真（正面・横向き）をsessionStorageに渡す
+    // 姿勢写真をsessionStorageに渡す
     if (state.hasPhoto && state.photoUrl) {
       sessionStorage.setItem('posture_photo', state.photoUrl);
-    }
-    if (state.hasPhotoSide && state.photoUrlSide) {
-      sessionStorage.setItem('posture_photo_side', state.photoUrlSide);
     }
     window.location.href = 'result.html';
   }

@@ -125,7 +125,7 @@
     }
 
     /* ===== 姿勢写真 ===== */
-    #posture-img, #posture-img-side {
+    #posture-img {
       width: 100%; border-radius: 12px;
       display: none; margin-bottom: 10px;
     }
@@ -290,8 +290,7 @@
   <!-- ===== ③ 姿勢写真 ===== -->
   <div class="card" id="posture-card">
     <div class="card-title"><span class="icon">📸</span>姿勢写真</div>
-    <img id="posture-img" alt="姿勢写真（正面）" />
-    <img id="posture-img-side" alt="姿勢写真（横向き）" />
+    <img id="posture-img" alt="姿勢写真" />
     <div class="posture-placeholder" id="posture-placeholder">
       姿勢写真はありません
     </div>
@@ -775,17 +774,11 @@
     drawRadar(axes);
     renderBars(axes);
 
-    // 姿勢写真（正面・横向き）
+    // 姿勢写真
     const photoUrl = data.photoUrl || sessionStorage.getItem('posture_photo');
     if (photoUrl) {
       document.getElementById('posture-img').src = photoUrl;
       document.getElementById('posture-img').style.display = 'block';
-      document.getElementById('posture-placeholder').style.display = 'none';
-    }
-    const photoUrlSide = data.photoUrlSide || sessionStorage.getItem('posture_photo_side');
-    if (photoUrlSide) {
-      document.getElementById('posture-img-side').src = photoUrlSide;
-      document.getElementById('posture-img-side').style.display = 'block';
       document.getElementById('posture-placeholder').style.display = 'none';
     }
     const avgBal = ((data.leftHeld || 0) + (data.rightHeld || 0)) / 2;
