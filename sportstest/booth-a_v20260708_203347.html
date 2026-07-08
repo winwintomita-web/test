@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ブースA｜反復横跳び測定</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
   <style>
     :root {
       --primary: #f97316;
@@ -414,8 +413,7 @@
   <div style="background:#e0f2fe; border-radius:10px; padding:14px; font-size:0.82rem; line-height:1.8; color:#0369a1; margin-bottom:20px;">
     ⚠️ <b>スタッフの方へ</b><br>
     ・3本線のライン設置を確認してください<br>
-    ・利用者が中央ラインに立ったことを確認してから開始してください<br>
-    ・足がラインに触れるとカメラが自動でカウントします（うまく検出できない場合は手動タップも可能です）
+    ・利用者が中央ラインに立ったことを確認してから開始してください
   </div>
 
   <button class="btn btn-primary" onclick="startCountdown()">🚀 測定を開始する</button>
@@ -432,15 +430,6 @@
 <!-- ===== 画面5：測定中 ===== -->
 <div class="card screen fade-in" id="screen-measure">
   <h2 style="text-align:center; margin-bottom:16px;">🏃 測定中</h2>
-
-  <!-- 自動検出用カメラ -->
-  <div id="detect-wrap" style="position:relative; width:100%; max-width:300px; margin:0 auto 14px;
-    border-radius:12px; overflow:hidden; background:#000; aspect-ratio:4/3;">
-    <video id="detect-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; display:block;"></video>
-    <canvas id="detect-overlay-a" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
-    <div id="detect-status-a" style="position:absolute; top:5px; left:0; right:0; text-align:center;
-      font-size:0.68rem; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);">🟢 自動検出中</div>
-  </div>
 
   <!-- タイマーリング -->
   <div class="timer-ring">
@@ -478,8 +467,8 @@
   </div>
 
   <button class="count-btn" id="count-btn" onclick="addCount()">
-    ← 手動タップ →<br>
-    <span style="font-size:0.8rem; font-weight:400; opacity:0.7;">（自動検出できなかった時の予備用）</span>
+    ← タップしてカウント →<br>
+    <span style="font-size:0.8rem; font-weight:400; opacity:0.7;">（ラインを踏むたびにタップ）</span>
   </button>
 
   <button class="btn btn-danger" onclick="if(confirm('測定を中断しますか？')) abortMeasure()">
@@ -569,14 +558,6 @@
   let audioCtx   = null;
   let qrScanner  = null;
   let totalCircumference = 2 * Math.PI * 96; // ≈ 603.2
-
-  // ===== カメラ自動検出（反復横跳び） =====
-  const DETECT_HFOV_DEG = 60; // camera-setup.htmlと同じ前提画角
-  let detectStream     = null;
-  let poseDetector      = null;
-  let detectRunning     = false;
-  let lastTouchedLine   = null;
-  let lastTouchTime     = 0;
 
   // ===== 画面切り替え =====
   function showScreen(id) {
@@ -748,123 +729,6 @@
     }, 1000);
   }
 
-  // ===== ライン位置の計算（camera-setup.htmlの設定を反映） =====
-  function computeLineX(canvasW) {
-    const camHeightCm = parseFloat(localStorage.getItem('aidock_camsetup_height')) || 100;
-    const camDistCm   = parseFloat(localStorage.getItem('aidock_camsetup_dist'))   || 250;
-    const hFovRad = DETECT_HFOV_DEG * Math.PI / 180;
-    const halfWidthCm = camDistCm * Math.tan(hFovRad / 2);
-    const pxPerCmX = (canvasW / 2) / halfWidthCm;
-    const xC = canvasW / 2;
-    return { xC, xL: xC - 100 * pxPerCmX, xR: xC + 100 * pxPerCmX, pxPerCmX };
-  }
-
-  // ===== 姿勢推定の結果からライン接触を判定 =====
-  function onPoseResults(results) {
-    const canvas = document.getElementById('detect-overlay-a');
-    const video  = document.getElementById('detect-video');
-    if (!canvas || !video.videoWidth) return;
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const cctx = canvas.getContext('2d');
-    cctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const { xC, xL, xR } = computeLineX(canvas.width);
-
-    // ライン表示
-    cctx.strokeStyle = 'rgba(255, 210, 40, 0.8)';
-    cctx.lineWidth = 3;
-    [xL, xC, xR].forEach(x => {
-      cctx.beginPath(); cctx.moveTo(x, 0); cctx.lineTo(x, canvas.height); cctx.stroke();
-    });
-
-    if (!results.poseLandmarks || timeLeft <= 0) return;
-
-    // 両足（足首・かかと・つま先）のうち最も画面下（地面側）にある点を採用
-    const FOOT_IDX = [27, 28, 29, 30, 31, 32];
-    let footX = null, maxY = -1;
-    FOOT_IDX.forEach(i => {
-      const p = results.poseLandmarks[i];
-      if (p && p.visibility > 0.4 && p.y > maxY) { maxY = p.y; footX = p.x; }
-    });
-    if (footX === null) return;
-
-    const xPx = footX * canvas.width;
-    const tol = (xR - xC) * 0.3; // ラインからの許容誤差(だいたい実寸30cm程度)
-
-    let touched = null;
-    if (Math.abs(xPx - xL) < tol) touched = 'L';
-    else if (Math.abs(xPx - xC) < tol) touched = 'C';
-    else if (Math.abs(xPx - xR) < tol) touched = 'R';
-
-    const now = Date.now();
-    if (touched && touched !== lastTouchedLine && (now - lastTouchTime) > 250) {
-      lastTouchedLine = touched;
-      lastTouchTime   = now;
-      addCount();
-
-      const hx = touched === 'L' ? xL : touched === 'C' ? xC : xR;
-      cctx.strokeStyle = 'rgba(16, 185, 129, 0.9)';
-      cctx.lineWidth = 6;
-      cctx.beginPath(); cctx.moveTo(hx, 0); cctx.lineTo(hx, canvas.height); cctx.stroke();
-    }
-  }
-
-  // ===== カメラ自動検出の開始 =====
-  async function startAutoDetect() {
-    const statusEl = document.getElementById('detect-status-a');
-    const video    = document.getElementById('detect-video');
-    lastTouchedLine = null;
-    lastTouchTime   = 0;
-
-    try {
-      detectStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false,
-      });
-      video.srcObject = detectStream;
-    } catch (e) {
-      statusEl.textContent = '⚠️ カメラ自動検出なし（手動タップをご利用ください）';
-      return;
-    }
-
-    try {
-      if (!poseDetector) {
-        poseDetector = new Pose({
-          locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`,
-        });
-        poseDetector.setOptions({
-          modelComplexity: 0,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-        poseDetector.onResults(onPoseResults);
-      }
-      statusEl.textContent = '🟢 自動検出中';
-    } catch (e) {
-      statusEl.textContent = '⚠️ 自動検出の準備に失敗しました（手動タップをご利用ください）';
-      return;
-    }
-
-    detectRunning = true;
-    detectLoop();
-  }
-
-  async function detectLoop() {
-    if (!detectRunning) return;
-    const video = document.getElementById('detect-video');
-    if (video.readyState >= 2 && poseDetector) {
-      try { await poseDetector.send({ image: video }); } catch (e) { /* 1フレーム分は無視して継続 */ }
-    }
-    if (detectRunning) requestAnimationFrame(detectLoop);
-  }
-
-  function stopAutoDetect() {
-    detectRunning = false;
-    if (detectStream) { detectStream.getTracks().forEach(t => t.stop()); detectStream = null; }
-  }
-
   // ===== 測定開始 =====
   function startMeasure() {
     count    = 0;
@@ -900,8 +764,6 @@
 
       if (timeLeft <= 0) finishMeasure();
     }, 1000);
-
-    startAutoDetect();
   }
 
   // ===== カウントタップ =====
@@ -916,7 +778,6 @@
   // ===== 測定終了 =====
   function finishMeasure() {
     clearInterval(timerInterval);
-    stopAutoDetect();
 
     // 終了音（低音→高音）
     playBeep(440, 0.2, 0.5);
@@ -929,7 +790,6 @@
 
   function abortMeasure() {
     clearInterval(timerInterval);
-    stopAutoDetect();
     resetAll();
   }
 
@@ -1049,7 +909,6 @@
     timeLeft = 0;
     clearInterval(timerInterval);
     clearInterval(beepInterval);
-    stopAutoDetect();
     document.getElementById('manual-qr').value = '';
     showScreen('screen-start');
   }
