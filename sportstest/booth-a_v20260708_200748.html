@@ -413,7 +413,8 @@
   <div style="background:#e0f2fe; border-radius:10px; padding:14px; font-size:0.82rem; line-height:1.8; color:#0369a1; margin-bottom:20px;">
     ⚠️ <b>スタッフの方へ</b><br>
     ・3本線のライン設置を確認してください<br>
-    ・利用者が中央ラインに立ったことを確認してから開始してください
+    ・利用者が中央ラインに立ったことを確認してから開始してください<br>
+    ・測定中は「ピピッ」のテンポ音が流れます
   </div>
 
   <button class="btn btn-primary" onclick="startCountdown()">🚀 測定を開始する</button>
@@ -430,6 +431,14 @@
 <!-- ===== 画面5：測定中 ===== -->
 <div class="card screen fade-in" id="screen-measure">
   <h2 style="text-align:center; margin-bottom:16px;">🏃 測定中</h2>
+
+  <div class="beep-indicator">
+    <div class="beep-dot" id="beep-dot-1"></div>
+    <div class="beep-dot" id="beep-dot-2"></div>
+    <span>テンポ音 鳴動中</span>
+    <div class="beep-dot" id="beep-dot-3"></div>
+    <div class="beep-dot" id="beep-dot-4"></div>
+  </div>
 
   <!-- タイマーリング -->
   <div class="timer-ring">
@@ -764,6 +773,17 @@
 
       if (timeLeft <= 0) finishMeasure();
     }, 1000);
+
+    // ビープ（0.5秒ごとにピピッ）
+    let beepPhase = 0;
+    const dots = ['beep-dot-1','beep-dot-2','beep-dot-3','beep-dot-4'];
+    beepInterval = setInterval(() => {
+      playPipit();
+      // インジケーター点滅
+      dots.forEach(d => document.getElementById(d).classList.remove('flash'));
+      document.getElementById(dots[beepPhase % 4]).classList.add('flash');
+      beepPhase++;
+    }, 500);
   }
 
   // ===== カウントタップ =====
@@ -778,11 +798,16 @@
   // ===== 測定終了 =====
   function finishMeasure() {
     clearInterval(timerInterval);
+    clearInterval(beepInterval);
 
     // 終了音（低音→高音）
     playBeep(440, 0.2, 0.5);
     setTimeout(() => playBeep(880, 0.3, 0.5), 220);
     setTimeout(() => playBeep(1320, 0.4, 0.5), 440);
+
+    // ドットリセット
+    ['beep-dot-1','beep-dot-2','beep-dot-3','beep-dot-4']
+      .forEach(d => document.getElementById(d).classList.remove('flash'));
 
     buildResult();
     showScreen('screen-result');
@@ -790,6 +815,9 @@
 
   function abortMeasure() {
     clearInterval(timerInterval);
+    clearInterval(beepInterval);
+    ['beep-dot-1','beep-dot-2','beep-dot-3','beep-dot-4']
+      .forEach(d => document.getElementById(d).classList.remove('flash'));
     resetAll();
   }
 
