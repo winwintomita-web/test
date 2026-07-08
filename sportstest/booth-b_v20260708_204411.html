@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>ブースB｜バランス・姿勢測定</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
   <style>
     :root {
       --primary:      #8b5cf6;
@@ -436,7 +435,7 @@
 
   <!-- ボタンエリア -->
   <div id="btn-area">
-    <button id="foot-down-btn" onclick="footDown()">⚠️ 足が下りました（自動検出できない時の予備用）</button>
+    <button id="foot-down-btn" onclick="footDown()">⚠️ 足が下りました（スタッフ用）</button>
     <button id="abort-btn" onclick="confirmAbort()">測定を中断する</button>
   </div>
 </div>
@@ -559,12 +558,6 @@
   let camStream      = null;
   let wakeLock       = null;
   let resolveBalance = null;
-
-  // ===== カメラでの片足立ち自動検出 =====
-  let poseDetectorB  = null;
-  let detectRunningB = false;
-  let balanceSide    = null; // 'left' | 'right' | null（測定中の軸足）
-  let footDownStreak = 0;
   let balanceTimerInterval = null;
   let balanceRemaining     = 30;
   let qrScanner      = null;
@@ -824,74 +817,6 @@
     }
   }
 
-  // ===== 片足立ち：上げた足が地面に着いたことを姿勢推定で自動検出 =====
-  function onPoseResultsB(results) {
-    if (!balanceSide || !results.poseLandmarks || !resolveBalance) { footDownStreak = 0; return; }
-
-    const lm = results.poseLandmarks;
-    // 27/29/31=左 足首・かかと・つま先／28/30/32=右
-    const standingIdx = balanceSide === 'left' ? [27, 29, 31] : [28, 30, 32];
-    const raisedIdx   = balanceSide === 'left' ? [28, 30, 32] : [27, 29, 31];
-
-    const avgY = (idxs) => {
-      const pts = idxs.map(i => lm[i]).filter(p => p && p.visibility > 0.4);
-      if (!pts.length) return null;
-      return pts.reduce((s, p) => s + p.y, 0) / pts.length;
-    };
-
-    const groundY = avgY(standingIdx);
-    const raisedY = avgY(raisedIdx);
-    if (groundY == null || raisedY == null) { footDownStreak = 0; return; }
-
-    // 上げている足のy座標が軸足のy座標に近づいた（＝地面に着いた）かどうか
-    const diff = groundY - raisedY;
-    if (diff < 0.06) {
-      footDownStreak++;
-    } else {
-      footDownStreak = 0;
-    }
-
-    // 連続検出で誤検知を防止してから確定
-    if (footDownStreak >= 6) {
-      footDownStreak = 0;
-      footDown();
-    }
-  }
-
-  async function startPoseWatchB() {
-    if (!camStream) return;
-    try {
-      if (!poseDetectorB) {
-        poseDetectorB = new Pose({
-          locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${f}`,
-        });
-        poseDetectorB.setOptions({
-          modelComplexity: 0,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-        poseDetectorB.onResults(onPoseResultsB);
-      }
-      detectRunningB = true;
-      poseWatchLoopB();
-    } catch (e) { /* 検出準備に失敗した場合は手動ボタンのみで進行 */ }
-  }
-
-  async function poseWatchLoopB() {
-    if (!detectRunningB) return;
-    const video = document.getElementById('cam-video');
-    if (video && video.readyState >= 2 && poseDetectorB) {
-      try { await poseDetectorB.send({ image: video }); } catch (e) { /* 1フレーム分は無視して継続 */ }
-    }
-    if (detectRunningB) requestAnimationFrame(poseWatchLoopB);
-  }
-
-  function stopPoseWatchB() {
-    detectRunningB = false;
-    balanceSide = null;
-  }
-
   // ===== スリープ防止 =====
   async function keepAwake() {
     try {
@@ -906,7 +831,6 @@
     showScreen('screen-measure');
     await keepAwake();
     await startCamera();
-    startPoseWatchB();
     await runFlow();
   }
 
@@ -1025,7 +949,6 @@
     state.rightHeld = await runBalance('right', 30);
     if (state.aborted) return;
     hideTimer();
-    stopPoseWatchB();
 
     // ── 姿勢写真（正面） ──
     setPhase('姿勢写真（正面）');
@@ -1086,8 +1009,6 @@
       const startTime = Date.now();
       const announced = new Set();
       balanceRemaining = total;
-      balanceSide      = side;
-      footDownStreak   = 0;
 
       updateTimerRing(total, total);
 
@@ -1106,7 +1027,6 @@
         if (elapsed >= total) {
           clearInterval(balanceTimerInterval);
           document.getElementById('foot-down-btn').style.display = 'none';
-          balanceSide = null;
           resolve(total);
         }
       }, 50);
@@ -1114,7 +1034,6 @@
       resolveBalance = () => {
         clearInterval(balanceTimerInterval);
         document.getElementById('foot-down-btn').style.display = 'none';
-        balanceSide = null;
         const held = Math.min((Date.now() - startTime) / 1000, total);
         resolve(Math.round(held * 10) / 10);
       };
@@ -1314,7 +1233,6 @@
     state.aborted = true;
     clearInterval(balanceTimerInterval);
     window.speechSynthesis && window.speechSynthesis.cancel();
-    stopPoseWatchB();
     if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
     wakeLock && wakeLock.release().catch(() => {});
     resetAll();
